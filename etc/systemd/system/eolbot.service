@@ -1,0 +1,16 @@
+[Unit]
+Description=EOL Software Telegram Bot
+After=network.target
+
+[Service]
+WorkingDirectory=/opt/EOLSoftwareBot
+ExecStart=/opt/EOLSoftwareBot/.venv/bin/python3 /opt/EOLSoftwareBot/main.py
+User=eolbot
+
+# Ensure the service automatically restarts.
+Restart=on-failure
+# Amount of time to wait before restarting the service.
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

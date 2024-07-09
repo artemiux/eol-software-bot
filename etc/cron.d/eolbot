@@ -1,0 +1,1 @@
+11 0 * * 1  eolbot /opt/EOLSoftwareBot/.venv/bin/python3 /opt/EOLSoftwareBot/src/update.py; /opt/EOLSoftwareBot/.venv/bin/python3 /opt/EOLSoftwareBot/src/send.py

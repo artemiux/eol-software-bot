@@ -1,0 +1,9 @@
+/var/log/eolbot.log {
+    weekly
+    rotate 12
+    compress
+    delaycompress
+    notifempty
+    missingok
+    create 660 root eolbot
+}

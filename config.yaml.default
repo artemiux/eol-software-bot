@@ -1,0 +1,21 @@
+bot:
+  api_token: YOUR_BOT_TOKEN
+
+  # The limit for asynchronous sending.
+  max_concurrent_messages: 10
+
+  # This user will be notified via private message in Telegram in case of errors.
+  # Ensure that the bot has permission to send such messages (previously sent `/start`).
+  # If EOL_BOT_ENVIRONMENT environment variable is set to `Development`, eol reports
+  # will only be sent to this user. See more in .env.development.example.
+  admin_chat_id: null
+db:
+  path: var/eolbot.db
+logs:
+  path: /var/log/eolbot.log
+  format: '%(asctime)s %(levelname)s %(filename)s: %(message)s'
+repo:
+  path: var/release-data
+report:
+  # The number of days that eol reports cover.
+  days_to_cover: 7
