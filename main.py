@@ -2,6 +2,7 @@ import logging
 import os
 import sys
 from telegram import Update
+from telegram.error import TelegramError
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
 from telegram.ext.filters import UpdateFilter
 
@@ -62,10 +63,14 @@ async def subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE, db: DBMa
         else:
             db_user.is_active = True
         session.commit()
+        logger.info(f"User {update.effective_chat.id} subscribed")
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text='You have subscribed!'
         )
+    except TelegramError as e:
+        session.rollback()
+        logger.error(f"Exception while replying user {update.effective_chat.id}: {e}")
     except Exception as e:
         session.rollback()
         logger.error(f"Exception while subscribing user {update.effective_chat.id}: {e}")
@@ -75,8 +80,6 @@ async def subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE, db: DBMa
         )
     finally:
         session.remove()
-
-    logger.info(f"User {update.effective_chat.id} subscribed")
 
 
 async def unsubscribe(update: Update, context: ContextTypes.DEFAULT_TYPE, db: DBManager) -> None:
@@ -89,10 +92,14 @@ async def unsubscribe(update: Update, context: ContextTypes.DEFAULT_TYPE, db: DB
         else:
             db_user.is_active = False
         session.commit()
+        logger.info(f"User {update.effective_chat.id} ubsubscribed")
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text='You have unsubscribed!'
         )
+    except TelegramError as e:
+        session.rollback()
+        logger.error(f"Exception while replying user {update.effective_chat.id}: {e}")
     except Exception as e:
         session.rollback()
         logger.error(f"Exception while unsubscribing user {update.effective_chat.id}: {e}")
@@ -102,8 +109,6 @@ async def unsubscribe(update: Update, context: ContextTypes.DEFAULT_TYPE, db: DB
         )
     finally:
         session.remove()
-
-    logger.info(f"User {update.effective_chat.id} ubsubscribed")
 
 
 def main():
