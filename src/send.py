@@ -7,8 +7,9 @@ from confighelper import ConfigHelper
 from dbmanager import DBManager, User
 from report import Report
 from telegram import Bot
-from telegram.error import Forbidden
 from telegram.constants import ParseMode
+from telegram.error import Forbidden
+from telegram.request import HTTPXRequest
 
 
 """
@@ -54,10 +55,10 @@ async def send_message(bot, telegram_id, text) -> None:
 async def send(recipients, text) -> None:
     logger.info(f"A new report will be sent to {len(recipients)} users")
 
-    bot = Bot(confighelper.config['bot']['api_token'])
-
     # Send messages asynchronously.
     max_concurrent_messages = confighelper.config['bot']['max_concurrent_messages']
+    bot = Bot(confighelper.config['bot']['api_token'], request=HTTPXRequest(connection_pool_size=max_concurrent_messages))
+    
     tasks = []
     for recipient in recipients:
         task = asyncio.create_task(
