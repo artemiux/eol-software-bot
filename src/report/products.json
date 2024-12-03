@@ -548,6 +548,10 @@
 		"name": "Hashicorp Consul"
 	},
 	{
+		"id": "hashicorp-packer",
+		"name": "Hashicorp Packer"
+	},
+	{
 		"id": "terraform",
 		"name": "Hashicorp Terraform"
 	},
@@ -714,6 +718,10 @@
 	{
 		"id": "magento",
 		"name": "Magento"
+	},
+	{
+		"id": "mandrel",
+		"name": "Mandrel"
 	},
 	{
 		"id": "mariadb",
@@ -916,6 +924,10 @@
 		"name": "NVIDIA GPUs"
 	},
 	{
+		"id": "horizon",
+		"name": "Omnissa Horizon"
+	},
+	{
 		"id": "oneplus",
 		"name": "OnePlus"
 	},
@@ -1022,6 +1034,10 @@
 	{
 		"id": "pnpm",
 		"name": "pnpm"
+	},
+	{
+		"id": "podman",
+		"name": "Podman"
 	},
 	{
 		"id": "pop-os",
@@ -1228,6 +1244,10 @@
 		"name": "SUSE Manager"
 	},
 	{
+		"id": "svelte",
+		"name": "Svelte"
+	},
+	{
 		"id": "symfony",
 		"name": "Symfony"
 	},
@@ -1294,10 +1314,6 @@
 	{
 		"id": "vmware-harbor-registry",
 		"name": "VMware Harbor Registry"
-	},
-	{
-		"id": "horizon",
-		"name": "VMware Horizon"
 	},
 	{
 		"id": "photon",
