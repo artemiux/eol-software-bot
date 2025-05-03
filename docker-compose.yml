@@ -1,0 +1,16 @@
+name: eolbot
+
+volumes:
+  data:
+
+services:
+  bot:
+    image: eolbot:latest
+    container_name: eolbot-container
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    volumes:
+      - data:/app/var
+      - /var/log/eolbot:/app/var/log

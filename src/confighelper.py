@@ -1,3 +1,4 @@
+import argparse
 import os
 import yaml
 
@@ -5,7 +6,10 @@ import yaml
 class ConfigHelper:
 
     def __init__(self):
-        self.config = self._load()
+        parser = argparse.ArgumentParser()
+        parser.add_argument('-f', required=False)
+        args = parser.parse_args()
+        self.config = self._load(args.f)
 
 
     def get_base_dir(self) -> str:
@@ -33,9 +37,10 @@ class ConfigHelper:
         return repo_path
 
 
-    def _load(self) -> object:
-        config_path = os.path.join(self.get_base_dir(), 'config.yaml')
+    def _load(self, config_path) -> object:
+        if not config_path:
+            config_path = os.path.join(self.get_base_dir(), 'config.yaml')
         if not os.path.exists(config_path):
-            raise FileNotFoundError('config.yaml not found')
+            raise FileNotFoundError('Configuration not found')
         with open(config_path) as file:
             return yaml.load(file, Loader=yaml.FullLoader)

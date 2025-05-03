@@ -2,7 +2,6 @@ import asyncio
 import datetime
 import logging
 import logginghelper
-import os
 from confighelper import ConfigHelper
 from dbmanager import DBManager, User
 from report import Report
@@ -19,7 +18,6 @@ Sends reports to all subscribers.
 
 confighelper = ConfigHelper()
 
-logginghelper.setup_env(confighelper)
 logginghelper.setup_logging(confighelper, logger_name=__name__)
 logger = logging.getLogger(__name__)
 
@@ -93,16 +91,7 @@ def main():
     session = db.new_session()
     report_recipients = []
     try:
-        if os.getenv('EOL_BOT_ENVIRONMENT') == 'Development':
-            if not confighelper.config['bot']['admin_chat_id']:
-                raise Exception('You must set `admin_chat_id` in config.yaml if development environment is enabled')
-            admin_recipient = session.query(User)\
-                .filter_by(telegram_id=confighelper.config['bot']['admin_chat_id']).first()
-            if not admin_recipient:
-                raise Exception('Development environment requires the user specified in `admin_chat_id` to exist in the database')
-            report_recipients.append(admin_recipient)
-        else:
-            report_recipients = session.query(User).filter_by(is_active=True).all()
+        report_recipients = session.query(User).filter_by(is_active=True).all()
     except Exception as e:
         logger.error(f"Exception while getting recipients: {e}")
         return

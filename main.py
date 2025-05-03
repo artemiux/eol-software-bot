@@ -6,12 +6,8 @@ from telegram.error import TelegramError
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
 from telegram.ext.filters import UpdateFilter
 
-# Change the current directory to the location of the script.
-# It ensures that all relative paths are resolved correctly.
-os.chdir(os.path.dirname(__file__))
-
 # This lines are necessary to be able to import modules from the 'src' directory.
-src_path = os.path.join(os.path.dirname(__file__), 'src')
+src_path = os.path.join(os.getcwd(), 'src')
 sys.path.append(src_path)
 
 import logginghelper
@@ -21,7 +17,6 @@ from dbmanager import DBManager, User
 
 confighelper = ConfigHelper()
 
-logginghelper.setup_env(confighelper)
 logginghelper.setup_logging(confighelper, logger_name=__name__)
 logger = logging.getLogger(__name__)
 
@@ -29,15 +24,14 @@ logger = logging.getLogger(__name__)
 class DevelopmentEnvironmentFilter(UpdateFilter):
     def __init__(self, config: dict):
         super().__init__()
-        if config:
-            self.config = config
-            self.environment = os.getenv('EOL_BOT_ENVIRONMENT')
-            self.logger = logging.getLogger(__name__)
+        self.config = config
+        self.environment = os.getenv('EOL_BOT_ENVIRONMENT')
+        self.logger = logging.getLogger(__name__)
 
 
     def filter(self, update: Update) -> bool:
         self.logger.info(f"User {update.effective_chat.id} typed {update.message.text}")
-        if self.environment == 'Development'\
+        if self.environment == 'Development' \
                 and update.effective_chat.id != self.config['bot']['admin_chat_id']:
             self.logger.warning(f"User {update.effective_chat.id} was ignored due to development environment")
             return False

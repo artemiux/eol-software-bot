@@ -6,13 +6,13 @@ bot:
 
   # This user will be notified via private message in Telegram in case of errors.
   # Ensure that the bot has permission to send such messages (previously sent `/start`).
-  # If EOL_BOT_ENVIRONMENT environment variable is set to `Development`, eol reports
-  # will only be sent to this user. See more in .env.development.example.
+  # If the EOL_BOT_ENVIRONMENT environment variable is set to `Development`,
+  # only this user can send commands to the bot.
   admin_chat_id: null
 db:
   path: var/eolbot.db
 logs:
-  path: /var/log/eolbot.log
+  path: var/log/main.log
   format: '%(asctime)s %(levelname)s %(filename)s: %(message)s'
 repo:
   path: var/release-data

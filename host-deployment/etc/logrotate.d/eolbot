@@ -1,9 +1,9 @@
-/var/log/eolbot.log {
+/var/log/eolbot/main.log {
     weekly
     rotate 12
     compress
     delaycompress
     notifempty
     missingok
-    create 660 root eolbot
+    create 640 eolbot eolbot
 }

@@ -1,7 +1,4 @@
-**/__pycache__/
-.env
-.venv
-.vscode
 config.yaml
+config.debug.yaml
 logo.jpg
-var/*
+var

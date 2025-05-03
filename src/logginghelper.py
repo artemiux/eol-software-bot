@@ -1,14 +1,7 @@
 import logging
 import os
 from confighelper import ConfigHelper
-from dotenv import load_dotenv
 from telegramhandler import TelegramHandler
-
-
-def setup_env(confighelper: ConfigHelper) -> None:
-    dotenv_path = os.path.join(confighelper.get_base_dir(), '.env')
-    if os.path.exists(dotenv_path):
-        load_dotenv(dotenv_path=dotenv_path)
 
 
 def setup_logging(confighelper: ConfigHelper, logger_name: str) -> None:
