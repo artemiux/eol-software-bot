@@ -20,8 +20,6 @@ def main():
         repo_path = confighelper.get_repo_path()
         if not os.path.exists(repo_path):
             subprocess.run(["git", "clone", "https://github.com/endoflife-date/release-data.git", repo_path])
-        checkout_result = subprocess.run(['git', 'checkout'], check=True, capture_output=True, cwd=repo_path)
-        logger.info(checkout_result.stdout.decode().strip())
         pull_result = subprocess.run(['git', 'pull'], check=True, capture_output=True, cwd=repo_path)
         logger.info(pull_result.stdout.decode().strip())
     except Exception as e:
