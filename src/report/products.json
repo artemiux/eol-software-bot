@@ -8,6 +8,10 @@
 		"name": "Akeneo PIM"
 	},
 	{
+		"id": "alibaba-ack",
+		"name": "Alibaba ACK"
+	},
+	{
 		"id": "alibaba-dragonwell",
 		"name": "Alibaba Dragonwell"
 	},
@@ -92,6 +96,10 @@
 		"name": "Apache Airflow"
 	},
 	{
+		"id": "ant",
+		"name": "Apache Ant"
+	},
+	{
 		"id": "apache-apisix",
 		"name": "Apache APISIX"
 	},
@@ -148,6 +156,14 @@
 		"name": "Apache Maven"
 	},
 	{
+		"id": "apache-nifi",
+		"name": "Apache NiFi"
+	},
+	{
+		"id": "apache-pulsar",
+		"name": "Apache Pulsar"
+	},
+	{
 		"id": "solr",
 		"name": "Apache Solr"
 	},
@@ -196,6 +212,10 @@
 		"name": "Apple macOS"
 	},
 	{
+		"id": "tvos",
+		"name": "Apple tvOS"
+	},
+	{
 		"id": "visionos",
 		"name": "Apple visionOS"
 	},
@@ -236,12 +256,32 @@
 		"name": "Azure Kubernetes Service"
 	},
 	{
+		"id": "backdrop",
+		"name": "Backdrop"
+	},
+	{
+		"id": "bamboo",
+		"name": "Bamboo"
+	},
+	{
 		"id": "bazel",
 		"name": "Bazel"
 	},
 	{
 		"id": "bellsoft-liberica",
 		"name": "Bellsoft Liberica JDK"
+	},
+	{
+		"id": "big-ip",
+		"name": "BIG-IP"
+	},
+	{
+		"id": "bigbluebutton",
+		"name": "BigBlueButton"
+	},
+	{
+		"id": "bitbucket",
+		"name": "Bitbucket"
 	},
 	{
 		"id": "blender",
@@ -254,6 +294,10 @@
 	{
 		"id": "bun",
 		"name": "Bun"
+	},
+	{
+		"id": "caddy",
+		"name": "caddy"
 	},
 	{
 		"id": "cakephp",
@@ -308,6 +352,10 @@
 		"name": "ClamAV"
 	},
 	{
+		"id": "cnspec",
+		"name": "cnspec"
+	},
+	{
 		"id": "cockroachdb",
 		"name": "CockroachDB"
 	},
@@ -358,6 +406,10 @@
 	{
 		"id": "debian",
 		"name": "Debian"
+	},
+	{
+		"id": "deno",
+		"name": "Deno"
 	},
 	{
 		"id": "dependency-track",
@@ -420,6 +472,10 @@
 		"name": "Erlang"
 	},
 	{
+		"id": "eslint",
+		"name": "ESLint"
+	},
+	{
 		"id": "etcd",
 		"name": "etcd"
 	},
@@ -430,6 +486,10 @@
 	{
 		"id": "exim",
 		"name": "Exim"
+	},
+	{
+		"id": "express",
+		"name": "Express"
 	},
 	{
 		"id": "fairphone",
@@ -460,6 +520,10 @@
 		"name": "Flux"
 	},
 	{
+		"id": "forgejo",
+		"name": "Forgejo"
+	},
+	{
 		"id": "fortios",
 		"name": "FortiOS"
 	},
@@ -468,12 +532,20 @@
 		"name": "FreeBSD"
 	},
 	{
+		"id": "gatekeeper",
+		"name": "Gatekeeper"
+	},
+	{
 		"id": "gerrit",
 		"name": "Gerrit"
 	},
 	{
 		"id": "gitlab",
 		"name": "GitLab"
+	},
+	{
+		"id": "ghc",
+		"name": "Glasgow Haskell Compiler (GHC)"
 	},
 	{
 		"id": "go",
@@ -504,6 +576,10 @@
 		"name": "Google Pixel"
 	},
 	{
+		"id": "pixel-watch",
+		"name": "Google Pixel Watch"
+	},
+	{
 		"id": "gorilla",
 		"name": "Gorilla Toolkit"
 	},
@@ -532,8 +608,20 @@
 		"name": "Graylog"
 	},
 	{
+		"id": "greenlight",
+		"name": "Greenlight"
+	},
+	{
+		"id": "grunt",
+		"name": "Grunt"
+	},
+	{
 		"id": "gstreamer",
 		"name": "GStreamer"
+	},
+	{
+		"id": "guzzle",
+		"name": "Guzzle"
 	},
 	{
 		"id": "haproxy",
@@ -630,6 +718,10 @@
 	{
 		"id": "jreleaser",
 		"name": "JReleaser"
+	},
+	{
+		"id": "julia",
+		"name": "Julia"
 	},
 	{
 		"id": "kde-plasma",
@@ -852,12 +944,12 @@
 		"name": "Neos"
 	},
 	{
-		"id": "netbsd",
-		"name": "NetBSD"
+		"id": "netapp-ontap",
+		"name": "NetApp ONTAP"
 	},
 	{
-		"id": "readynas",
-		"name": "Netgear ReadyNAS"
+		"id": "netbsd",
+		"name": "NetBSD"
 	},
 	{
 		"id": "nextjs",
@@ -922,6 +1014,10 @@
 	{
 		"id": "nvidia-gpu",
 		"name": "NVIDIA GPUs"
+	},
+	{
+		"id": "nvm",
+		"name": "nvm"
 	},
 	{
 		"id": "horizon",
@@ -1164,6 +1260,10 @@
 		"name": "Roundcube Webmail"
 	},
 	{
+		"id": "rtpengine",
+		"name": "rtpengine"
+	},
+	{
 		"id": "ruby",
 		"name": "Ruby"
 	},
@@ -1292,6 +1392,10 @@
 		"name": "UnrealIRCd"
 	},
 	{
+		"id": "valkey",
+		"name": "Valkey"
+	},
+	{
 		"id": "varnish",
 		"name": "Varnish"
 	},
@@ -1300,8 +1404,24 @@
 		"name": "Veeam Backup & Replication"
 	},
 	{
+		"id": "veeam-backup-for-microsoft-365",
+		"name": "Veeam Backup for Microsoft 365"
+	},
+	{
+		"id": "veeam-one",
+		"name": "Veeam ONE"
+	},
+	{
+		"id": "virtualbox",
+		"name": "VirtualBox"
+	},
+	{
 		"id": "visual-cobol",
 		"name": "Visual COBOL"
+	},
+	{
+		"id": "vitess",
+		"name": "Vitess"
 	},
 	{
 		"id": "vmware-cloud-foundation",
@@ -1338,6 +1458,10 @@
 	{
 		"id": "wagtail",
 		"name": "Wagtail"
+	},
+	{
+		"id": "weakforced",
+		"name": "Weakforced"
 	},
 	{
 		"id": "weechat",
