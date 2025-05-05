@@ -10,8 +10,8 @@ ENV PYTHONDONTWRITEBYTECODE=1
 # Turns off buffering for easier container logging
 ENV PYTHONUNBUFFERED=1
 
-# Install git
-RUN apt update && apt install -y git
+# Install cron and git
+RUN apt update && apt install -y cron git
 
 # Install pip requirements
 COPY requirements.txt .
@@ -24,7 +24,7 @@ RUN mkdir /app/$APPDATA_DIR
 
 # Creates a Cron job to update data and send notifications
 RUN cat >/etc/cron.d/app <<EOF
-11 0 * * 1 appuser [ "\$EOL_BOT_ENVIRONMENT" != "Development" ] && python /app/src/update.py && python /app/src/send.py
+11 0 * * 1 appuser bash -c '[ "\$EOL_BOT_ENVIRONMENT" != "Development" ] && python /app/src/update.py && python /app/src/send.py'
 EOF
 
 # Creates a non-root user with an explicit UID and adds permission to access the /app folder
