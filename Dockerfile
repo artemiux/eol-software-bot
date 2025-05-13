@@ -24,13 +24,13 @@ RUN mkdir /app/$APPDATA_DIR
 
 # Creates a Cron job to update data and send notifications
 RUN cat >/etc/cron.d/app <<EOF
-11 0 * * 1 appuser bash -c '[ "\$EOL_BOT_ENVIRONMENT" != "Development" ] && python /app/src/update.py && python /app/src/send.py'
+11 0 * * 1 appuser bash -c '[ "\$EOL_BOT_ENVIRONMENT" != "Development" ] && /usr/local/bin/python /app/src/update.py && /usr/local/bin/python /app/src/send.py'
 EOF
 
 # Creates a non-root user with an explicit UID and adds permission to access the /app folder
 # For more info, please refer to https://aka.ms/vscode-docker-python-configure-containers
 RUN adduser -u 5678 --disabled-password --gecos "" appuser && chown -R appuser /app
-USER appuser
+USER root
 
 # During debugging, this entry point will be overridden. For more information, please refer to https://aka.ms/vscode-docker-python-debug
-CMD ["python", "main.py"]
+CMD cron && su appuser -c "python /app/main.py"
