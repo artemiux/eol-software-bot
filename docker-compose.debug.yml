@@ -1,0 +1,8 @@
+services:
+  eolbot:
+    image: ${DOCKER_REGISTRY-}eolbot:dev
+    build:
+      context: .
+      dockerfile: EolBot/Dockerfile
+      args:
+        - Configuration=Debug

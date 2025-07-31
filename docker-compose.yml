@@ -1,0 +1,13 @@
+services:
+  eolbot:
+    image: ${DOCKER_REGISTRY-}eolbot:latest
+    container_name: eolbot
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: EolBot/Dockerfile
+      args:
+        - USER_UID=5678
+    volumes:
+      - /opt/EolBot/etc/appsettings.json:/app/appsettings.json:ro
+      - /opt/EolBot/var:/app/AppData
