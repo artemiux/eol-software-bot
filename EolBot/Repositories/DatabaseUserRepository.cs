@@ -124,6 +124,5 @@ namespace EolBot.Repositories
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
         }
-
     }
 }

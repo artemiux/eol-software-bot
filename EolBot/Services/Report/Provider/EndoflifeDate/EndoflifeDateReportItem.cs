@@ -59,8 +59,7 @@ namespace EolBot.Services.Report.Provider.EndoflifeDate
         {
             if (value.Bool != null)
             {
-                var boolString = value.Bool.Value ? "true" : "false";
-                JsonSerializer.Serialize(writer, boolString, options);
+                JsonSerializer.Serialize(writer, value.Bool, options);
                 return;
             }
             if (value.DateTime != null)
