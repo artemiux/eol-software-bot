@@ -61,76 +61,75 @@ namespace EolBot.Services.Telegram.Bot
         private async Task OnMessage(Message msg)
         {
             logger.LogInformation("Receive message type: {MessageType}", msg.Type);
+
             // Process text messages only from users in private chats.
             if (msg.Text is not { } messageText
-                || msg.Chat.Type != ChatType.Private
-                || msg.From?.IsBot == true)
+                || msg.Chat is not { Type: ChatType.Private } chat
+                || msg.From is not { } user || user.IsBot == true)
+            {
                 return;
+            }
 
             using var scope = scopeFactory.CreateScope();
             var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
 
             Message sentMessage = await (messageText.Split(' ', StringSplitOptions.TrimEntries)[0] switch
             {
-                "/subscribe" => Subscribe(msg, userRepository),
-                "/unsubscribe" => Unsubscribe(msg, userRepository),
-                "/send" when msg.From!.Id == _telegramSettings.AdminChatId => Send(msg, userRepository),
-                "/stats" when msg.From!.Id == _telegramSettings.AdminChatId => Stats(msg, userRepository),
-                _ => Usage(msg)
+                "/subscribe" => Subscribe(user, chat, userRepository),
+                "/unsubscribe" => Unsubscribe(user, chat, userRepository),
+                "/send" when user.Id == _telegramSettings.AdminChatId => Send(chat, messageText, userRepository),
+                "/stats" when user.Id == _telegramSettings.AdminChatId => Stats(chat, userRepository),
+                _ => Usage(chat)
             });
             logger.LogInformation("The message was sent with id: {SentMessageId}", sentMessage.Id);
         }
 
         #region Subscription commands
-        private async Task<Message> Subscribe(Message msg, IUserRepository userRepository)
+        private async Task<Message> Subscribe(User user, Chat chat, IUserRepository userRepository)
         {
-            var userId = msg.From!.Id;
             try
             {
-                await userRepository.SubscribeAsync(userId);
-                logger.LogInformation("Subscribed user: {UserId}", userId);
-                return await bot.SendMessage(userId, "You have subscribed!");
+                await userRepository.SubscribeAsync(user.Id);
+                logger.LogInformation("Subscribed user: {UserId} ({UserFirstName})", user.Id, user.FirstName);
+                return await bot.SendMessage(chat, "You have subscribed!");
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Failed to subscribe user: {UserId}", userId);
-                return await bot.SendMessage(userId, "Something went wrong. Try again later.");
+                logger.LogError(ex, "Failed to subscribe user: {UserId} ({UserFirstName})", user.Id, user.FirstName);
+                return await bot.SendMessage(chat, "Something went wrong. Try again later.");
             }
         }
 
-        private async Task<Message> Unsubscribe(Message msg, IUserRepository userRepository)
+        private async Task<Message> Unsubscribe(User user, Chat chat, IUserRepository userRepository)
         {
-            var userId = msg.From!.Id;
             try
             {
-                await userRepository.UnsubscribeAsync(userId);
-                logger.LogInformation("Unsubscribed user: {UserId}", userId);
-                return await bot.SendMessage(userId, "You have unsubscribed!");
+                await userRepository.UnsubscribeAsync(user.Id);
+                logger.LogInformation("Unsubscribed user: {UserId} ({UserFirstName})", user.Id, user.FirstName);
+                return await bot.SendMessage(chat, "You have unsubscribed!");
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Failed to unsubscribe user: {UserId}", userId);
-                return await bot.SendMessage(userId, "Something went wrong. Try again later.");
+                logger.LogError(ex, "Failed to unsubscribe user: {UserId} ({UserFirstName})", user.Id, user.FirstName);
+                return await bot.SendMessage(chat, "Something went wrong. Try again later.");
             }
         }
         #endregion
 
         #region Admin commands
-        private async Task<Message> Send(Message msg, IUserRepository userRepository)
+        private async Task<Message> Send(Chat chat, string messageText, IUserRepository userRepository)
         {
-            var userId = msg.From!.Id;
-
-            var parts = msg.Text!.Split(' ', StringSplitOptions.TrimEntries);
+            var parts = messageText.Split(' ', StringSplitOptions.TrimEntries);
             if (parts.Length == 2 && parts[1] == "start")
             {
                 if (sender.Active)
                 {
-                    return await bot.SendMessage(userId, "Already in progress.");
+                    return await bot.SendMessage(chat, "Already in progress.");
                 }
 
                 int usersToProcess = await userRepository.GetQueryable().CountAsync(u => u.IsActive);
                 return await bot.SendMessage(
-                    chatId: userId,
+                    chatId: chat,
                     text: $"The report will be sent to {usersToProcess} users. Proceed?",
                     replyMarkup: new InlineKeyboardButton[][]
                     {
@@ -141,11 +140,11 @@ namespace EolBot.Services.Telegram.Bot
             {
                 if (!sender.Active)
                 {
-                    return await bot.SendMessage(userId, "Already stopped.");
+                    return await bot.SendMessage(chat, "Already stopped.");
                 }
 
                 return await bot.SendMessage(
-                    chatId: userId,
+                    chatId: chat,
                     text: "Sending the report will be stopped. Proceed?",
                     replyMarkup: new InlineKeyboardButton[][]
                     {
@@ -155,12 +154,12 @@ namespace EolBot.Services.Telegram.Bot
             else
             {
                 return await bot.SendMessage(
-                    chatId: userId,
+                    chatId: chat,
                     text: "Usage: /send <start|stop>");
             }
         }
 
-        private async Task<Message> Stats(Message msg, IUserRepository userRepository)
+        private async Task<Message> Stats(Chat chat, IUserRepository userRepository)
         {
             var overallStats = await userRepository.GetStatsAsync();
             var now = DateTime.UtcNow;
@@ -170,38 +169,43 @@ namespace EolBot.Services.Telegram.Bot
                 Last 30 days: {lastStats.ActiveUsers}/{lastStats.TotalUsers}
                 """;
 
-            return await bot.SendMessage(msg.From!.Id, text);
+            return await bot.SendMessage(chat, text);
         }
         #endregion
 
         #region Callbacks
         private async Task OnCallbackQuery(CallbackQuery callbackQuery, CancellationToken cancellationToken)
         {
+            if (callbackQuery.Message?.Chat is not { } chat)
+            {
+                return;
+            }
+
             await bot.DeleteMessage(
-                chatId: callbackQuery.Message!.Chat,
+                chatId: chat,
                 messageId: callbackQuery.Message.Id,
                 cancellationToken: cancellationToken);
 
             switch (callbackQuery.Data)
             {
                 case "send start":
-                    await StartSendingAsync(callbackQuery, cancellationToken);
+                    await StartSendingAsync(chat, cancellationToken);
                     break;
                 case "send stop":
-                    await StopSendingAsync(callbackQuery);
+                    await StopSendingAsync(chat);
                     break;
                 default:
                     break;
             }
         }
 
-        private async Task StartSendingAsync(CallbackQuery callbackQuery, CancellationToken cancellationToken)
+        private async Task StartSendingAsync(Chat chat, CancellationToken cancellationToken)
         {
             var from = DateTime.UtcNow.Date;
             var to = from.AddDays(_reportSettings.DaysToCover - 1);
 
             await bot.SendMessage(
-                chatId: callbackQuery.Message!.Chat,
+                chatId: chat,
                 text: "Start sending...",
                 cancellationToken: cancellationToken);
             _sendingCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -209,23 +213,23 @@ namespace EolBot.Services.Telegram.Bot
             {
                 var counter = await sender.SendReportAsync(from, to, _sendingCancellationTokenSource.Token);
                 await bot.SendMessage(
-                    chatId: callbackQuery.Message!.Chat,
+                    chatId: chat,
                     text: $"Done. Report sent to {counter} users.",
                     cancellationToken: cancellationToken);
             });
         }
 
-        private async Task StopSendingAsync(CallbackQuery callbackQuery)
+        private async Task StopSendingAsync(Chat chat)
         {
             _sendingCancellationTokenSource?.Cancel();
-            await bot.SendMessage(callbackQuery.Message!.Chat, "Stopped.");
+            await bot.SendMessage(chat, "Stopped.");
         }
         #endregion
 
-        private async Task<Message> Usage(Message msg)
+        private async Task<Message> Usage(Chat chat)
         {
             const string usage = "Welcome! To start receiving EOL reports, type /subscribe. You can cancel your subscription at any time.";
-            return await bot.SendMessage(msg.Chat, usage);
+            return await bot.SendMessage(chat, usage);
         }
 
         private Task UnknownUpdateHandlerAsync(Update update)
