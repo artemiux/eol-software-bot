@@ -87,10 +87,10 @@ namespace EolBot.Tests.Repositories
             var mockConfiguration = new Mock<IConfiguration>();
             mockConfiguration.Setup(x => x.GetSection(It.IsAny<string>())[It.IsAny<string>()]).Returns(It.IsAny<string>());
             var mockUsers = _testUsers.BuildMock();
-            var userRepository = new Mock<DatabaseUserRepository>(
-                newExpression: () => new DatabaseUserRepository(new EolBotDbContext(mockConfiguration.Object)));
-            userRepository.Setup(x => x.GetQueryable()).Returns(mockUsers);
-            _repository = userRepository.Object;
+            var mockUserRepository = new Mock<DatabaseUserRepository>(
+                () => new DatabaseUserRepository(new EolBotDbContext(mockConfiguration.Object)));
+            mockUserRepository.Setup(x => x.GetQueryable()).Returns(mockUsers);
+            _repository = mockUserRepository.Object;
         }
 
         [Fact]

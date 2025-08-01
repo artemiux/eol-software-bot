@@ -69,13 +69,6 @@ namespace EolBot.Tests.Report
             File.WriteAllText(fileAPath, JsonSerializer.Serialize(itemA));
             File.WriteAllText(fileBPath, JsonSerializer.Serialize(itemB));
 
-            var options = new Mock<IOptions<RepositorySettings>>();
-            options.Setup(x => x.Value).Returns(new RepositorySettings
-            {
-                Url = It.IsAny<string>(),
-                LocalPath = _repoData
-            });
-
             var provider = new EndoflifeDateProvider(_options, _gitService);
             var actual = provider.Get(
                 fromInclusive: new(2199, 1, 1, 0, 0, 0),
