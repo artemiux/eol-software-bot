@@ -30,14 +30,14 @@ namespace EolBot.Services.Telegram
         };
         private readonly int _databaseRequestLimit = reportOptions.Value.MaxConcurrentMessages * 10;
 
-        public async Task<int> SendReportAsync(DateTime fromInclusive, DateTime toInclusive,
+        public async Task<SendingResult> SendReportAsync(DateTime fromInclusive, DateTime toInclusive,
             CancellationToken stoppingToken = default)
         {
             lock (this)
             {
                 if (Active)
                 {
-                    throw new InvalidOperationException("Process already active.");
+                    return new SendingResult(Error: "ConcurrentError", ErrorMessage: "Process already active.");
                 }
                 Active = true;
             }
@@ -52,13 +52,14 @@ namespace EolBot.Services.Telegram
             {
                 logger.LogError(ex, "Failed to create report");
                 Active = false;
-                return 0;
+                return new SendingResult(Error: "ReportError", ErrorMessage: ex.Message);
             }
 
             using var scope = scopeFactory.CreateScope();
             var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
 
-            var counter = 0;
+            var sent = 0;
+            var failed = 0;
             var start = 1;
             while (!stoppingToken.IsCancellationRequested && start > 0)
             {
@@ -70,10 +71,16 @@ namespace EolBot.Services.Telegram
                         start: start,
                         limit: _databaseRequestLimit);
                 }
-                catch
+                catch (Exception ex)
                 {
+                    logger.LogError(ex, "Failed to get users");
                     Active = false;
-                    throw;
+                    return new SendingResult
+                    (
+                        ReportRecipientsCount: sent,
+                        Error: "DatabaseError",
+                        ErrorMessage: ex.Message
+                    );
                 }
                 start = result.Next.GetValueOrDefault();
 
@@ -81,19 +88,34 @@ namespace EolBot.Services.Telegram
                 {
                     if (await SendMessage(user.TelegramId, text, userRepository))
                     {
-                        Interlocked.Increment(ref counter);
+                        Interlocked.Increment(ref sent);
+                    }
+                    else
+                    {
+                        Interlocked.Increment(ref failed);
                     }
                 });
             }
 
+            logger.LogInformation("Report sent to {Counter} users", sent);
+            Active = false;
+            
             if (stoppingToken.IsCancellationRequested)
             {
-                logger.LogWarning("Cancelled");
+                return new SendingResult
+                (
+                    ReportRecipientsCount: sent,
+                    Error: "Cancelled"
+                );
             }
-            logger.LogInformation("Report sent to {Counter} users", counter);
-
-            Active = false;
-            return counter;
+            
+            return new SendingResult
+            (
+                Ok: failed == 0,
+                ReportRecipientsCount: sent,
+                Error: failed > 0 ? "DeliveryWarning" : null,
+                ErrorMessage: failed > 0 ? $"There were {failed} failed recipients." : null
+            );
         }
 
         private async Task<bool> SendMessage(long chatId, string text,
@@ -133,4 +155,9 @@ namespace EolBot.Services.Telegram
             return sent;
         }
     }
+
+    public record SendingResult(
+        bool Ok = false,
+        int? ReportRecipientsCount = 0,
+        string? Error = null, string? ErrorMessage = null);
 }

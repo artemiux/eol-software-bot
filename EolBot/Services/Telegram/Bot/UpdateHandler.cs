@@ -211,10 +211,11 @@ namespace EolBot.Services.Telegram.Bot
             _sendingCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             _sendingTask = Task.Run(async () =>
             {
-                var counter = await sender.SendReportAsync(from, to, _sendingCancellationTokenSource.Token);
+                var result = await sender.SendReportAsync(from, to, _sendingCancellationTokenSource.Token);
                 await bot.SendMessage(
                     chatId: chat,
-                    text: $"Done. Report sent to {counter} users.",
+                    text: $"<pre>{result}</pre>",
+                    parseMode: ParseMode.Html,
                     cancellationToken: cancellationToken);
             });
         }
