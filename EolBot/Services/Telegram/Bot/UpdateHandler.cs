@@ -3,6 +3,7 @@ using EolBot.Services.LogReader.Abstract;
 using EolBot.Services.Report;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using System.Net;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Polling;
@@ -133,7 +134,7 @@ namespace EolBot.Services.Telegram.Bot
             {
                 text = string.Concat(text.AsSpan(0, 4092), "...");
             }
-            return await bot.SendMessage(chat, $"<pre>{text}</pre>", ParseMode.Html);
+            return await bot.SendMessage(chat, $"<pre>{WebUtility.HtmlEncode(text)}</pre>", ParseMode.Html);
         }
 
         private async Task<Message> Send(Chat chat, string messageText, IUserRepository userRepository)
