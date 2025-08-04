@@ -4,6 +4,8 @@ using EolBot.Repositories.Abstract;
 using EolBot.Services;
 using EolBot.Services.Git;
 using EolBot.Services.Git.Abstract;
+using EolBot.Services.LogReader;
+using EolBot.Services.LogReader.Abstract;
 using EolBot.Services.Report;
 using EolBot.Services.Report.Abstract;
 using EolBot.Services.Report.EndoflifeDate;
@@ -66,6 +68,7 @@ namespace EolBot
             builder.Services.AddTransient<Jobs>();
 
             // Setup logging.
+            builder.Services.AddSingleton<ILogReader, FileLogReader>();
             builder.Services.AddSerilog((services, loggerConfiguration) => loggerConfiguration
                 .ReadFrom.Configuration(builder.Configuration));
 

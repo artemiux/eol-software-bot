@@ -1,4 +1,5 @@
 ﻿using EolBot.Repositories.Abstract;
+using EolBot.Services.LogReader.Abstract;
 using EolBot.Services.Report;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -17,6 +18,7 @@ namespace EolBot.Services.Telegram.Bot
         ITelegramBotClient bot,
         TelegramSender sender,
         IServiceScopeFactory scopeFactory,
+        ILogReader logReader,
         ILogger<UpdateHandler> logger) : IUpdateHandler
     {
         private readonly TelegramSettings _telegramSettings = telegramOptions.Value;
@@ -73,12 +75,14 @@ namespace EolBot.Services.Telegram.Bot
             using var scope = scopeFactory.CreateScope();
             var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
 
+            bool isAdmin = user.Id == _telegramSettings.AdminChatId;
             Message sentMessage = await (messageText.Split(' ', StringSplitOptions.TrimEntries)[0] switch
             {
                 "/subscribe" => Subscribe(user, chat, userRepository),
                 "/unsubscribe" => Unsubscribe(user, chat, userRepository),
-                "/send" when user.Id == _telegramSettings.AdminChatId => Send(chat, messageText, userRepository),
-                "/stats" when user.Id == _telegramSettings.AdminChatId => Stats(chat, userRepository),
+                "/logs" when isAdmin => Logs(chat),
+                "/send" when isAdmin => Send(chat, messageText, userRepository),
+                "/stats" when isAdmin => Stats(chat, userRepository),
                 _ => Usage(chat)
             });
             logger.LogInformation("The message was sent with id: {SentMessageId}", sentMessage.Id);
@@ -117,6 +121,21 @@ namespace EolBot.Services.Telegram.Bot
         #endregion
 
         #region Admin commands
+        private async Task<Message> Logs(Chat chat)
+        {
+            var lines = await logReader.TailAsync("AppData/Logs/", 25);
+            string text = string.Join("\n", lines);
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                text = "No logs found.";
+            }
+            else if (text.Length > 4096)
+            {
+                text = string.Concat(text.AsSpan(0, 4092), "...");
+            }
+            return await bot.SendMessage(chat, $"<pre>{text}</pre>", ParseMode.Html);
+        }
+
         private async Task<Message> Send(Chat chat, string messageText, IUserRepository userRepository)
         {
             var parts = messageText.Split(' ', StringSplitOptions.TrimEntries);
