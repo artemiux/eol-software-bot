@@ -1,4 +1,5 @@
 ﻿using EolBot.Repositories.Abstract;
+using EolBot.Services.LogReader;
 using EolBot.Services.LogReader.Abstract;
 using EolBot.Services.Report;
 using Microsoft.EntityFrameworkCore;
@@ -20,33 +21,39 @@ namespace EolBot.Services.Telegram.Bot
         TelegramSender sender,
         IServiceScopeFactory scopeFactory,
         ILogReader logReader,
+        IOptions<LogReaderSettings> logReaderOptions,
         ILogger<UpdateHandler> logger) : IUpdateHandler
     {
         private readonly TelegramSettings _telegramSettings = telegramOptions.Value;
         private readonly ReportSettings _reportSettings = reportOptions.Value;
+        private readonly LogReaderSettings _logReaderSettings = logReaderOptions.Value;
 
         private CancellationTokenSource? _sendingCancellationTokenSource;
         private Task? _sendingTask;
 
         public async Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, HandleErrorSource source, CancellationToken cancellationToken)
         {
-            logger.LogInformation("HandleError: {Exception}", exception);
-            // Cooldown in case of network connection error.
             if (exception is RequestException)
             {
+                logger.LogError("HandleError: {Message}", exception.Message);
+                // Cooldown in case of network connection error.
                 await Task.Delay(TimeSpan.FromSeconds(2), cancellationToken);
             }
-            else if (_telegramSettings.AdminChatId != default)
+            else
             {
-                try
+                logger.LogError("HandleError: {Exception}", exception);
+                if (_telegramSettings.AdminChatId != default)
                 {
-                    // Notify admin about the error.
-                    await botClient.SendMessage(
-                        chatId: _telegramSettings.AdminChatId,
-                        text: $"[{nameof(EolBot)}] HandleError: {exception.Message}",
-                        cancellationToken: cancellationToken);
+                    try
+                    {
+                        // Notify admin about the error.
+                        await botClient.SendMessage(
+                            chatId: _telegramSettings.AdminChatId,
+                            text: $"[{nameof(EolBot)}] HandleError: {exception.Message}",
+                            cancellationToken: cancellationToken);
+                    }
+                    catch { }
                 }
-                catch { }
             }
         }
 
@@ -124,17 +131,22 @@ namespace EolBot.Services.Telegram.Bot
         #region Admin commands
         private async Task<Message> Logs(Chat chat)
         {
-            var lines = await logReader.TailAsync("AppData/Logs/", 25);
-            string text = string.Join("\n", lines);
-            if (string.IsNullOrWhiteSpace(text))
+            var lines = (await logReader.TailAsync("AppData/Logs/", _logReaderSettings.MaxLines)).ToArray();
+            for (int i = 0; i < lines.Length; i++)
             {
-                text = "No logs found.";
+                if (lines[i].Length > _logReaderSettings.MaxLineLength)
+                {
+                    lines[i] = string.Concat(lines[i].AsSpan(0, _logReaderSettings.MaxLineLength - 3), "...");
+                }
             }
-            else if (text.Length > 4096)
+
+            string text = WebUtility.HtmlEncode(
+                value: string.Join("\n\n", lines.Length > 0 ? lines : ["No logs found"]));
+            if (text.Length > 4085)
             {
-                text = string.Concat(text.AsSpan(0, 4092), "...");
+                text = string.Concat(text.AsSpan(0, 4082), "...");
             }
-            return await bot.SendMessage(chat, $"<pre>{WebUtility.HtmlEncode(text)}</pre>", ParseMode.Html);
+            return await bot.SendMessage(chat, $"<pre>{text}</pre>", ParseMode.Html);
         }
 
         private async Task<Message> Send(Chat chat, string messageText, IUserRepository userRepository)

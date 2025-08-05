@@ -33,6 +33,7 @@ namespace EolBot
             builder.Services.Configure<TelegramSettings>(builder.Configuration.GetSection("Telegram"));
             builder.Services.Configure<ReportSettings>(builder.Configuration.GetSection("Report"));
             builder.Services.Configure<RepositorySettings>(builder.Configuration.GetSection("Repository"));
+            builder.Services.Configure<LogReaderSettings>(builder.Configuration.GetSection("LogReader"));
 
             // Setup repositories.
             builder.Services.AddDbContext<EolBotDbContext>();
