@@ -6,20 +6,16 @@ namespace EolBot.Services.Report.Provider.EndoflifeDate
 {
     public class EndoflifeDateReportItem
     {
-        [JsonPropertyName("releases")]
         public required Dictionary<string, Release> Releases { get; set; }
     }
 
     public class Release
     {
-        [JsonPropertyName("name")]
         public required string Name { get; set; }
 
         [JsonConverter(typeof(EolConverter))]
-        [JsonPropertyName("eol")]
         public Eol Eol { get; set; }
 
-        [JsonPropertyName("eoes")]
         public DateTime? Eoes { get; set; }
     }
 
