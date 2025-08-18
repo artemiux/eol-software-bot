@@ -7,6 +7,11 @@ namespace EolBot.Services.Report.Provider.EndoflifeDate
 {
     public partial class EndoflifeDateProvider : IReportDataProvider
     {
+        private readonly JsonSerializerOptions _jsonSerializerOptions = new()
+        {
+            PropertyNameCaseInsensitive = true
+        };
+
         private readonly string _repoUrl;
         private readonly string _repoPath;
         private readonly string _repoData;
@@ -42,7 +47,7 @@ namespace EolBot.Services.Report.Provider.EndoflifeDate
                 try
                 {
                     var deserializedContent = JsonSerializer
-                        .Deserialize<EndoflifeDateReportItem>(File.ReadAllText(file));
+                        .Deserialize<EndoflifeDateReportItem>(File.ReadAllText(file), _jsonSerializerOptions);
                     if (deserializedContent == null)
                     {
                         _logger?.LogWarning("{FileName} has no content", Path.GetFileName(file));
