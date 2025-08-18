@@ -29,7 +29,6 @@ namespace EolBot.Services.Telegram.Bot
         private readonly LogReaderSettings _logReaderSettings = logReaderOptions.Value;
 
         private CancellationTokenSource? _sendingCancellationTokenSource;
-        private Task? _sendingTask;
 
         public async Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, HandleErrorSource source, CancellationToken cancellationToken)
         {
@@ -241,7 +240,7 @@ namespace EolBot.Services.Telegram.Bot
                 text: "Start sending...",
                 cancellationToken: cancellationToken);
             _sendingCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            _sendingTask = Task.Run(async () =>
+            _ = Task.Run(async () =>
             {
                 var result = await sender.SendReportAsync(from, to, _sendingCancellationTokenSource.Token);
                 await bot.SendMessage(
