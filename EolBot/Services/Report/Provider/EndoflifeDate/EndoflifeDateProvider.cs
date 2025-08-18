@@ -44,33 +44,26 @@ namespace EolBot.Services.Report.Provider.EndoflifeDate
             List<ReportItem> items = [];
             foreach (var file in Directory.EnumerateFiles(_repoData, "*.json"))
             {
-                try
+                var deserializedContent = JsonSerializer
+                    .Deserialize<EndoflifeDateReportItem>(File.ReadAllText(file), _jsonSerializerOptions);
+                if (deserializedContent == null)
                 {
-                    var deserializedContent = JsonSerializer
-                        .Deserialize<EndoflifeDateReportItem>(File.ReadAllText(file), _jsonSerializerOptions);
-                    if (deserializedContent == null)
-                    {
-                        _logger?.LogWarning("{FileName} has no content", Path.GetFileName(file));
-                        continue;
-                    }
-                    var foundItems = from release in deserializedContent.Releases.Values
-                                     where (release.Eol.DateTime >= fromInclusive && release.Eol.DateTime <= toInclusive)
-                                        || (release.Eoes >= fromInclusive && release.Eoes <= toInclusive)
-                                     let productId = Path.GetFileNameWithoutExtension(file)
-                                     let eoesMatched = release.Eoes >= fromInclusive && release.Eoes <= toInclusive
-                                     select new ReportItem
-                                     {
-                                         ProductName = GetProductNameOrDefault(productId),
-                                         ProductVersion = release.Name,
-                                         ProductUrl = $"https://endoflife.date/{productId}",
-                                         Eol = eoesMatched ? release.Eoes!.Value : release.Eol.DateTime!.Value
-                                     };
-                    items.AddRange(foundItems);
+                    _logger?.LogWarning("{FileName} has no content", Path.GetFileName(file));
+                    continue;
                 }
-                catch (Exception ex)
-                {
-                    _logger?.LogError("An error occured while reading {File}: {Message}", Path.GetFileName(file), ex.Message);
-                }
+                var foundItems = from release in deserializedContent.Releases.Values
+                                 where (release.Eol.DateTime >= fromInclusive && release.Eol.DateTime <= toInclusive)
+                                    || (release.Eoes >= fromInclusive && release.Eoes <= toInclusive)
+                                 let productId = Path.GetFileNameWithoutExtension(file)
+                                 let eoesMatched = release.Eoes >= fromInclusive && release.Eoes <= toInclusive
+                                 select new ReportItem
+                                 {
+                                     ProductName = GetProductNameOrDefault(productId),
+                                     ProductVersion = release.Name,
+                                     ProductUrl = $"https://endoflife.date/{productId}",
+                                     Eol = eoesMatched ? release.Eoes!.Value : release.Eol.DateTime!.Value
+                                 };
+                items.AddRange(foundItems);
             }
 
             return items;
