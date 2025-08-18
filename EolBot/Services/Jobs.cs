@@ -2,7 +2,6 @@
 using EolBot.Services.Telegram;
 using Microsoft.Extensions.Options;
 using Telegram.Bot;
-using Telegram.Bot.Types.Enums;
 
 namespace EolBot.Services
 {
@@ -27,8 +26,7 @@ namespace EolBot.Services
             {
                 await bot.SendMessage(
                     chatId: telegramOptions.Value.AdminChatId,
-                    text: $"<pre>{result}</pre>",
-                    parseMode: ParseMode.Html,
+                    text: result.ToString(),
                     cancellationToken: lifetime.ApplicationStopping);
             }
             catch (Exception ex)

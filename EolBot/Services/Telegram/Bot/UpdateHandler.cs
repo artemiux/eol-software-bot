@@ -245,8 +245,7 @@ namespace EolBot.Services.Telegram.Bot
                 var result = await sender.SendReportAsync(from, to, _sendingCancellationTokenSource.Token);
                 await bot.SendMessage(
                     chatId: chat,
-                    text: $"<pre>{result}</pre>",
-                    parseMode: ParseMode.Html,
+                    text: result.ToString(),
                     cancellationToken: cancellationToken);
             });
         }
