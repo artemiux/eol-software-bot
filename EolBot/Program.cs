@@ -90,7 +90,7 @@ namespace EolBot
                 var jobManager = host.Services.GetRequiredService<IRecurringJobManager>();
                 jobManager.AddOrUpdate<Jobs>(
                     "weeklyreportjob",
-                    (jobs) => jobs.SendWeeklyReportAsync(),
+                    (jobs) => jobs.SendWeeklyReportAsync(default!),
                     Cron.Weekly(DayOfWeek.Monday, 0, 10));
             }
 

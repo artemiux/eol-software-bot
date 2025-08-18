@@ -99,7 +99,7 @@ namespace EolBot.Services.Telegram
 
             logger.LogInformation("Report sent to {Counter} users", sent);
             Active = false;
-            
+
             if (stoppingToken.IsCancellationRequested)
             {
                 return new SendingResult
@@ -108,7 +108,7 @@ namespace EolBot.Services.Telegram
                     Error: "Cancelled"
                 );
             }
-            
+
             return new SendingResult
             (
                 Ok: failed == 0,

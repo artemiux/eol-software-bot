@@ -2,6 +2,7 @@
 using EolBot.Services.LogReader;
 using EolBot.Services.LogReader.Abstract;
 using EolBot.Services.Report;
+using Hangfire;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using System.Net;
@@ -22,13 +23,14 @@ namespace EolBot.Services.Telegram.Bot
         IServiceScopeFactory scopeFactory,
         ILogReader logReader,
         IOptions<LogReaderSettings> logReaderOptions,
+        IBackgroundJobClient jobClient,
         ILogger<UpdateHandler> logger) : IUpdateHandler
     {
         private readonly TelegramSettings _telegramSettings = telegramOptions.Value;
         private readonly ReportSettings _reportSettings = reportOptions.Value;
         private readonly LogReaderSettings _logReaderSettings = logReaderOptions.Value;
 
-        private CancellationTokenSource? _sendingCancellationTokenSource;
+        private string? _sendingJobId;
 
         public async Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, HandleErrorSource source, CancellationToken cancellationToken)
         {
@@ -169,9 +171,9 @@ namespace EolBot.Services.Telegram.Bot
             }
             else if (parts.Length == 2 && parts[1] == "stop")
             {
-                if (!sender.Active)
+                if (IsSendingJobCompletedOrNotExist())
                 {
-                    return await bot.SendMessage(chat, "Already stopped.");
+                    return await bot.SendMessage(chat, "Nothing to stop. Use `/send start` first.");
                 }
 
                 return await bot.SendMessage(
@@ -201,6 +203,19 @@ namespace EolBot.Services.Telegram.Bot
                 """;
 
             return await bot.SendMessage(chat, text);
+        }
+
+        private bool IsSendingJobCompletedOrNotExist()
+        {
+            if (_sendingJobId == null)
+            {
+                return true;
+            }
+
+            using var connection = JobStorage.Current.GetConnection();
+            var jobData = connection.GetJobData(_sendingJobId);
+            return jobData == null ||
+                   (jobData.State == "Succeeded" || jobData.State == "Deleted" || jobData.State == "Failed");
         }
         #endregion
 
@@ -232,28 +247,30 @@ namespace EolBot.Services.Telegram.Bot
 
         private async Task StartSendingAsync(Chat chat, CancellationToken cancellationToken)
         {
-            var from = DateTime.UtcNow.Date;
-            var to = from.AddDays(_reportSettings.DaysToCover - 1);
-
-            await bot.SendMessage(
-                chatId: chat,
-                text: "Start sending...",
-                cancellationToken: cancellationToken);
-            _sendingCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            _ = Task.Run(async () =>
+            if (sender.Active)
             {
-                var result = await sender.SendReportAsync(from, to, _sendingCancellationTokenSource.Token);
-                await bot.SendMessage(
-                    chatId: chat,
-                    text: result.ToString(),
-                    cancellationToken: cancellationToken);
-            });
+                await bot.SendMessage(chat, "Already in progress.", cancellationToken: cancellationToken);
+            }
+            else
+            {
+                await bot.SendMessage(chat, "Start sending...", cancellationToken: cancellationToken);
+                _sendingJobId = jobClient.Enqueue<Jobs>(
+                    (jobs) => jobs.SendWeeklyReportAsync(default!));
+            }
         }
 
         private async Task StopSendingAsync(Chat chat)
         {
-            _sendingCancellationTokenSource?.Cancel();
-            await bot.SendMessage(chat, "Stopped.");
+            if (IsSendingJobCompletedOrNotExist())
+            {
+                await bot.SendMessage(chat, "Nothing to stop. Use `/send start` first.");
+            }
+            else
+            {
+                jobClient.Delete(_sendingJobId);
+                _sendingJobId = null;
+                await bot.SendMessage(chat, "Stopped.");
+            }
         }
         #endregion
 
