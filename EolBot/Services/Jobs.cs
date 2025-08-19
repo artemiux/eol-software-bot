@@ -6,20 +6,19 @@ using Telegram.Bot;
 
 namespace EolBot.Services
 {
-    class Jobs(IServiceProvider serviceProvider)
+    class Jobs(
+        IServiceProvider serviceProvider,
+        ILogger<Jobs> logger)
     {
         public async Task SendWeeklyReportAsync(IJobCancellationToken jobToken)
         {
-            var lifetime = serviceProvider.GetRequiredService<IHostApplicationLifetime>();
-            var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(jobToken.ShutdownToken, lifetime.ApplicationStopping);
-
             var reportOptions = serviceProvider.GetRequiredService<IOptions<ReportSettings>>();
             var from = DateTime.UtcNow.Date;
             var to = from.AddDays(reportOptions.Value.DaysToCover - 1);
             var sender = serviceProvider.GetRequiredService<TelegramSender>();
             var result = await sender.SendReportAsync(
                 fromInclusive: from, toInclusive: to,
-                stoppingToken: linkedCts.Token);
+                stoppingToken: jobToken.ShutdownToken);
 
             var telegramOptions = serviceProvider.GetRequiredService<IOptions<TelegramSettings>>();
             using var scope = serviceProvider.CreateScope();
@@ -32,7 +31,7 @@ namespace EolBot.Services
             }
             catch (Exception ex)
             {
-                serviceProvider.GetRequiredService<ILogger<Jobs>>().LogError(ex, "Failed to notify admin");
+                logger.LogError(ex, "Failed to notify admin");
             }
         }
     }
