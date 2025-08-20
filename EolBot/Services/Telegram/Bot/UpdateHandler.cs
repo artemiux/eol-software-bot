@@ -81,25 +81,47 @@ namespace EolBot.Services.Telegram.Bot
                 return;
             }
 
-            using var scope = scopeFactory.CreateScope();
-            var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
-
             bool isAdmin = user.Id == _telegramSettings.AdminChatId;
             Message sentMessage = await (messageText.Split(' ', StringSplitOptions.TrimEntries)[0] switch
             {
-                "/subscribe" => Subscribe(user, chat, userRepository),
-                "/unsubscribe" => Unsubscribe(user, chat, userRepository),
+                "/report" => Report(user, chat),
+                "/subscribe" => Subscribe(user, chat),
+                "/unsubscribe" => Unsubscribe(user, chat),
                 "/logs" when isAdmin => Logs(chat),
-                "/send" when isAdmin => Send(chat, messageText, userRepository),
-                "/stats" when isAdmin => Stats(chat, userRepository),
+                "/send" when isAdmin => Send(chat, messageText),
+                "/stats" when isAdmin => Stats(chat),
                 _ => Usage(chat)
             });
             logger.LogInformation("The message was sent with id: {SentMessageId}", sentMessage.Id);
         }
 
-        #region Subscription commands
-        private async Task<Message> Subscribe(User user, Chat chat, IUserRepository userRepository)
+        private async Task<Message> Report(User user, Chat chat)
         {
+            logger.LogInformation("User {UserId} requested report", user.Id.ToString());
+
+            using var scope = scopeFactory.CreateScope();
+            var reportRepository = scope.ServiceProvider.GetRequiredService<IReportRepository>();
+            Models.Report? report;
+            try
+            {
+                report = await reportRepository.LastAsync();
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to get last report");
+                return await bot.SendMessage(chat, "Something went wrong. Try again later.");
+            }
+
+            return await bot.SendMessage(chat,
+                text: report?.Data ?? "Report isn’t ready yet.",
+                parseMode: ParseMode.Html);
+        }
+
+        #region Subscription commands
+        private async Task<Message> Subscribe(User user, Chat chat)
+        {
+            using var scope = scopeFactory.CreateScope();
+            var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
             try
             {
                 await userRepository.SubscribeAsync(user.Id);
@@ -113,8 +135,10 @@ namespace EolBot.Services.Telegram.Bot
             }
         }
 
-        private async Task<Message> Unsubscribe(User user, Chat chat, IUserRepository userRepository)
+        private async Task<Message> Unsubscribe(User user, Chat chat)
         {
+            using var scope = scopeFactory.CreateScope();
+            var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
             try
             {
                 await userRepository.UnsubscribeAsync(user.Id);
@@ -150,7 +174,7 @@ namespace EolBot.Services.Telegram.Bot
             return await bot.SendMessage(chat, $"<pre>{text}</pre>", ParseMode.Html);
         }
 
-        private async Task<Message> Send(Chat chat, string messageText, IUserRepository userRepository)
+        private async Task<Message> Send(Chat chat, string messageText)
         {
             var parts = messageText.Split(' ', StringSplitOptions.TrimEntries);
             if (parts.Length == 2 && parts[1] == "start")
@@ -160,6 +184,8 @@ namespace EolBot.Services.Telegram.Bot
                     return await bot.SendMessage(chat, "Already in progress.");
                 }
 
+                using var scope = scopeFactory.CreateScope();
+                var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
                 int usersToProcess = await userRepository.GetQueryable().CountAsync(u => u.IsActive);
                 return await bot.SendMessage(
                     chatId: chat,
@@ -192,8 +218,10 @@ namespace EolBot.Services.Telegram.Bot
             }
         }
 
-        private async Task<Message> Stats(Chat chat, IUserRepository userRepository)
+        private async Task<Message> Stats(Chat chat)
         {
+            using var scope = scopeFactory.CreateScope();
+            var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
             var overallStats = await userRepository.GetStatsAsync();
             var now = DateTime.UtcNow;
             var lastStats = await userRepository.GetStatsAsync(now.AddDays(-30), now);
@@ -276,7 +304,7 @@ namespace EolBot.Services.Telegram.Bot
 
         private async Task<Message> Usage(Chat chat)
         {
-            const string usage = "Welcome! To start receiving EOL reports, type /subscribe. You can cancel your subscription at any time.";
+            const string usage = "Use /report to see this week’s summary. Use /subscribe to receive such reports every Monday. You can cancel your subscription at any time.";
             return await bot.SendMessage(chat, usage);
         }
 

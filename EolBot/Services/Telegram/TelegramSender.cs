@@ -56,8 +56,21 @@ namespace EolBot.Services.Telegram
             }
 
             using var scope = scopeFactory.CreateScope();
-            var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
+            var reportRepository = scope.ServiceProvider.GetRequiredService<IReportRepository>();
+            try
+            {
+                await reportRepository.AddAsync(text);
+            }
+            catch (Exception ex)
+            {
+                return new SendingResult
+                (
+                    Error: "DatabaseError",
+                    ErrorMessage: ex.Message
+                );
+            }
 
+            var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
             var sent = 0;
             var failed = 0;
             var start = 1;

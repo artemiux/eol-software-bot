@@ -38,6 +38,7 @@ namespace EolBot
             // Setup repositories.
             builder.Services.AddDbContext<EolBotDbContext>();
             builder.Services.AddScoped<IUserRepository, DatabaseUserRepository>();
+            builder.Services.AddScoped<IReportRepository, DatabaseReportRepository>();
 
             // Setup report services.
             builder.Services.AddSingleton<IGitService, LibGitService>(sp =>

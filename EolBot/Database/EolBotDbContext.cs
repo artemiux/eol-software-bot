@@ -7,6 +7,8 @@ namespace EolBot.Database
     {
         public DbSet<User> Users { get; set; }
 
+        public DbSet<Report> Reports { get; set; }
+
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             optionsBuilder
@@ -15,16 +17,7 @@ namespace EolBot.Database
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<User>()
-                .HasKey(u => u.TelegramId);
-
-            modelBuilder.Entity<User>()
-                .Property(u => u.TelegramId)
-                .ValueGeneratedNever();
-
-            modelBuilder.Entity<User>()
-                .Property(u => u.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+            modelBuilder.ApplyConfigurationsFromAssembly(typeof(User).Assembly);
         }
     }
 }
