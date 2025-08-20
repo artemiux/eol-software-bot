@@ -28,7 +28,7 @@ namespace EolBot.Repositories
         public Task<Report?> LastAsync()
         {
             return GetQueryable()
-                .OrderByDescending(r => r.CreatedAt)
+                .OrderBy(r => r.CreatedAt)
                 .LastOrDefaultAsync();
         }
 
