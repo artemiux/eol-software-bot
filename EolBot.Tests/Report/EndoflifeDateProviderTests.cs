@@ -49,7 +49,7 @@ namespace EolBot.Tests.Report
             };
             var mockEndoflifeDateClient = new Mock<IEndOfLifeDateClient>();
             mockEndoflifeDateClient
-                .Setup(x => x.GetFullProductsAsync(It.IsAny<CancellationToken>()))
+                .Setup(x => x.GetFullProductsAsync(default))
                 .ReturnsAsync(new FullProductListResponse
                 {
                     Total = 2,

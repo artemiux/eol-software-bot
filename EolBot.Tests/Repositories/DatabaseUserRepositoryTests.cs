@@ -1,7 +1,5 @@
-﻿using EolBot.Database;
-using EolBot.Models;
+﻿using EolBot.Models;
 using EolBot.Repositories;
-using Microsoft.Extensions.Configuration;
 using MockQueryable;
 using Moq;
 
@@ -84,12 +82,8 @@ namespace EolBot.Tests.Repositories
                 }
             ];
 
-            var mockConfiguration = new Mock<IConfiguration>();
-            mockConfiguration.Setup(x => x.GetSection(It.IsAny<string>())[It.IsAny<string>()]).Returns(It.IsAny<string>());
-            var mockUsers = _testUsers.BuildMock();
-            var mockUserRepository = new Mock<DatabaseUserRepository>(
-                () => new DatabaseUserRepository(new EolBotDbContext(mockConfiguration.Object)));
-            mockUserRepository.Setup(x => x.GetQueryable()).Returns(mockUsers);
+            var mockUserRepository = new Mock<DatabaseUserRepository>(null!);
+            mockUserRepository.Setup(x => x.GetQueryable()).Returns(_testUsers.BuildMock());
             _repository = mockUserRepository.Object;
         }
 
