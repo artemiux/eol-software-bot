@@ -1,11 +1,7 @@
 # EOL Software Bot
 
-This is the source code for the Telegram bot [@eol_software_bot](https://t.me/eol_software_bot) that tracks changes to software end-of-life (EOL) dates and sends a report on upcoming events every Monday. It supports hundreds of products.
+This is the source code for the Telegram bot [@eol_software_bot](https://t.me/eol_software_bot) that tracks changes to software end-of-life (EOL) dates and sends a report on upcoming events every Monday. It supports hundreds of products. The data source is [endoflife API](https://endoflife.date/docs/api/v1/).
 
 ## Quick Start
 
-Send the command `/subscribe` to the bot [@eol_software_bot](https://t.me/eol_software_bot).
-
-## How it works
-
-The data source is a local copy of the [@release-data](https://github.com/endoflife-date/release-data) repository. First, synchronization is performed, and then the json files in the [releases](https://github.com/endoflife-date/release-data/tree/main/releases) directory are parsed.
+Send `/report` to the bot [@eol_software_bot](https://t.me/eol_software_bot) to see which releases are retiring this week. If you’d like to receive such reports every Monday, send `/subscribe`.
