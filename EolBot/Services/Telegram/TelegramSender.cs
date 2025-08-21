@@ -45,7 +45,8 @@ namespace EolBot.Services.Telegram
             string text;
             try
             {
-                text = report.Create(fromInclusive, toInclusive, items: provider.Get(fromInclusive, toInclusive));
+                text = report.Create(fromInclusive, toInclusive,
+                    items: await provider.GetAsync(fromInclusive, toInclusive, stoppingToken));
                 logger.LogInformation("Report created:\n{Text}", text);
             }
             catch (Exception ex)

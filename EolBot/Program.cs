@@ -11,6 +11,8 @@ using EolBot.Services.Report.Abstract;
 using EolBot.Services.Report.EndoflifeDate;
 using EolBot.Services.Report.Provider.Abstract;
 using EolBot.Services.Report.Provider.EndoflifeDate;
+using EolBot.Services.Report.Provider.EndoflifeDate.Api;
+using EolBot.Services.Report.Provider.EndoflifeDate.Api.Abstract;
 using EolBot.Services.Telegram;
 using EolBot.Services.Telegram.Bot;
 using Hangfire;
@@ -44,6 +46,13 @@ namespace EolBot
             builder.Services.AddSingleton<IGitService, LibGitService>(sp =>
                 new LibGitService(
                     new Signature(nameof(EolBot), $"no@email.com", DateTime.UtcNow)));
+            builder.Services.AddHttpClient("endoflifedate_client").RemoveAllLoggers()
+                .AddTypedClient<IEndOfLifeDateClient>((httpClient) =>
+                {
+                    httpClient.BaseAddress = new Uri("https://endoflife.date/api/v1/");
+                    httpClient.Timeout = TimeSpan.FromSeconds(30);
+                    return new EndOfLifeDateClient(httpClient);
+                });
             builder.Services.AddSingleton<IReportDataProvider, EndoflifeDateProvider>();
             builder.Services.AddSingleton<IReport, EndoflifeDateDailyReport>();
 

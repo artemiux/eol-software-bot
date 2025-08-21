@@ -1,5 +1,7 @@
 ﻿using EolBot.Services.Git.Abstract;
 using EolBot.Services.Report.Provider.Abstract;
+using EolBot.Services.Report.Provider.EndoflifeDate.Api;
+using EolBot.Services.Report.Provider.EndoflifeDate.Api.Abstract;
 using Microsoft.Extensions.Options;
 using System.Text.Json;
 
@@ -17,13 +19,15 @@ namespace EolBot.Services.Report.Provider.EndoflifeDate
         private readonly string _repoData;
 
         private readonly IGitService _gitService;
+        private readonly IEndOfLifeDateClient _endOfLifeDateClient;
         private readonly ILogger<EndoflifeDateProvider>? _logger;
 
-        private ProductDetail[]? _productDetails;
+        private IEnumerable<ProductListResponseItem>? _products;
 
         public EndoflifeDateProvider(
             IOptions<RepositorySettings> options,
             IGitService gitService,
+            IEndOfLifeDateClient endOfLifeClient,
             ILogger<EndoflifeDateProvider>? logger = null)
         {
             _repoUrl = options.Value.Url;
@@ -31,19 +35,23 @@ namespace EolBot.Services.Report.Provider.EndoflifeDate
             _repoData = Path.Combine(_repoPath, "releases");
 
             _gitService = gitService;
+            _endOfLifeDateClient = endOfLifeClient;
             _logger = logger;
-
-            LoadProductDetails();
         }
 
-        public IEnumerable<ReportItem> Get(DateTime fromInclusive, DateTime toInclusive)
+        public async Task<IEnumerable<ReportItem>> GetAsync(DateTime fromInclusive, DateTime toInclusive,
+            CancellationToken cancellationToken = default)
         {
             _ = _gitService.EnsureCloned(_repoUrl, _repoPath);
             _gitService.Pull(_repoPath);
 
+            await LoadProductsAsync(cancellationToken);
+
             List<ReportItem> items = [];
             foreach (var file in Directory.EnumerateFiles(_repoData, "*.json"))
             {
+                cancellationToken.ThrowIfCancellationRequested();
+                
                 var deserializedContent = JsonSerializer
                     .Deserialize<EndoflifeDateReportItem>(File.ReadAllText(file), _jsonSerializerOptions);
                 if (deserializedContent == null)
@@ -56,11 +64,12 @@ namespace EolBot.Services.Report.Provider.EndoflifeDate
                                     || (release.Eoes >= fromInclusive && release.Eoes <= toInclusive)
                                  let productId = Path.GetFileNameWithoutExtension(file)
                                  let eoesMatched = release.Eoes >= fromInclusive && release.Eoes <= toInclusive
+                                 let product = FindProduct(productId)
                                  select new ReportItem
                                  {
-                                     ProductName = GetProductNameOrDefault(productId),
+                                     ProductName = product?.Label ?? productId,
                                      ProductVersion = release.Name,
-                                     ProductUrl = $"https://endoflife.date/{productId}",
+                                     ProductUrl = $"https://endoflife.date/{product?.Name ?? productId}",
                                      Eol = eoesMatched ? release.Eoes!.Value : release.Eol.DateTime!.Value
                                  };
                 items.AddRange(foundItems);
@@ -69,40 +78,28 @@ namespace EolBot.Services.Report.Provider.EndoflifeDate
             return items;
         }
 
-        /*
-            Loads optional `products.json` file that provides full product names.
-            It should be periodically updated, for example, by running the following code in the browser console
-            while staying on https://endoflife.date/:
-
-            let jsonArray = [];
-            document.querySelectorAll('.nav-list-item').forEach(item => {
-            let anchor = item.querySelector('a');
-            if(anchor) {
-                let obj = {
-                "id": anchor.getAttribute('href').slice(1),
-                "name": anchor.textContent.trim()
-                };
-                jsonArray.push(obj);
-            }
-            });
-            console.log(JSON.stringify(jsonArray, null, "\t"));
-        */
-        private void LoadProductDetails()
+        private async Task LoadProductsAsync(CancellationToken cancellationToken)
         {
-            if (File.Exists("products.json"))
+            try
             {
-                try
+                var response = await _endOfLifeDateClient.GetProductsAsync(cancellationToken);
+                if (response?.Total > 0)
                 {
-                    _productDetails = JsonSerializer.Deserialize<ProductDetail[]>(
-                        File.ReadAllText("products.json"));
+                    _products = response.Result;
                 }
-                catch { }
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Could not fetch products with the End‑of‑Life API");
             }
         }
 
-        private string GetProductNameOrDefault(string productId)
+        private ProductListResponseItem? FindProduct(string id)
         {
-            return _productDetails?.FirstOrDefault(x => x.Id == productId)?.Name ?? productId;
+            return _products?
+                .FirstOrDefault(x =>
+                    string.Equals(id, x.Name, StringComparison.OrdinalIgnoreCase)
+                        || x.Aliases.Any(y => string.Equals(id, y, StringComparison.OrdinalIgnoreCase)));
         }
     }
 }

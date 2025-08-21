@@ -2,6 +2,7 @@
 {
     public interface IReportDataProvider
     {
-        IEnumerable<ReportItem> Get(DateTime fromInclusive, DateTime toInclusive);
+        Task<IEnumerable<ReportItem>> GetAsync(DateTime fromInclusive, DateTime toInclusive,
+            CancellationToken cancellationToken = default);
     }
 }

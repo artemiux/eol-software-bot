@@ -1,5 +1,7 @@
 ﻿using EolBot.Services.Git.Abstract;
 using EolBot.Services.Report.Provider.EndoflifeDate;
+using EolBot.Services.Report.Provider.EndoflifeDate.Api;
+using EolBot.Services.Report.Provider.EndoflifeDate.Api.Abstract;
 using Microsoft.Extensions.Options;
 using Moq;
 using System.Text.Json;
@@ -33,14 +35,10 @@ namespace EolBot.Tests.Report
         }
 
         [Fact]
-        public void Get_FindsExactlyTwoItems()
+        public async Task Get_FindsExactlyTwoItems()
         {
-            Directory.CreateDirectory(_repoData);
-
             var productAName = "product-a";
             var productBName = "product-b";
-            var fileAPath = Path.Combine(_repoData, $"{productAName}.json");
-            var fileBPath = Path.Combine(_repoData, $"{productBName}.json");
             var releaseA = new Release
             {
                 Name = "1.0",
@@ -66,11 +64,36 @@ namespace EolBot.Tests.Report
                 }
             };
 
+            Directory.CreateDirectory(_repoData);
+            var fileAPath = Path.Combine(_repoData, $"{productAName}.json");
+            var fileBPath = Path.Combine(_repoData, $"{productBName}.json");
             File.WriteAllText(fileAPath, JsonSerializer.Serialize(itemA));
             File.WriteAllText(fileBPath, JsonSerializer.Serialize(itemB));
 
-            var provider = new EndoflifeDateProvider(_options, _gitService);
-            var actual = provider.Get(
+            ProductListResponseItem productInfoA = new()
+            {
+                Name = productAName,
+                Label = "Product A",
+                Uri = $"https://endoflife.date/{productAName}"
+            };
+            ProductListResponseItem productInfoB = new()
+            {
+                Name = "productb",
+                Aliases = [productBName], // Search by aliases
+                Label = "Product B",
+                Uri = "https://endoflife.date/productb"
+            };
+            var mockEndoflifeDateClient = new Mock<IEndOfLifeDateClient>();
+            mockEndoflifeDateClient
+                .Setup(x => x.GetProductsAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new ProductListResponse
+                {
+                    Total = 2,
+                    Result = [productInfoA, productInfoB]
+                });
+
+            var provider = new EndoflifeDateProvider(_options, _gitService, mockEndoflifeDateClient.Object);
+            var actual = await provider.GetAsync(
                 fromInclusive: new(2199, 1, 1, 0, 0, 0),
                 toInclusive: new(2199, 1, 6, 23, 59, 59));
 
@@ -80,16 +103,16 @@ namespace EolBot.Tests.Report
             Assert.Collection(actual,
                 item =>
                 {
-                    Assert.Equal(productAName, item.ProductName);
+                    Assert.Equal(productInfoA.Label, item.ProductName);
                     Assert.Equal(releaseA.Name, item.ProductVersion);
-                    Assert.Equal($"https://endoflife.date/{productAName}", item.ProductUrl);
+                    Assert.Equal(productInfoA.Uri, item.ProductUrl);
                     Assert.Equal(releaseA.Eol.DateTime, item.Eol);
                 },
                 item =>
                 {
-                    Assert.Equal(productBName, item.ProductName);
+                    Assert.Equal(productInfoB.Label, item.ProductName);
                     Assert.Equal(releaseB.Name, item.ProductVersion);
-                    Assert.Equal($"https://endoflife.date/{productBName}", item.ProductUrl);
+                    Assert.Equal(productInfoB.Uri, item.ProductUrl);
                     Assert.Equal(releaseB.Eol.DateTime, item.Eol);
                 });
         }
