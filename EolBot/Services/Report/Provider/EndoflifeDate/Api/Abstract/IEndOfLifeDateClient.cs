@@ -2,6 +2,6 @@
 {
     public interface IEndOfLifeDateClient
     {
-        Task<ProductListResponse?> GetProductsAsync(CancellationToken cancellationToken = default);
+        Task<FullProductListResponse?> GetFullProductsAsync(CancellationToken cancellationToken = default);
     }
 }

@@ -2,8 +2,6 @@ using EolBot.Database;
 using EolBot.Repositories;
 using EolBot.Repositories.Abstract;
 using EolBot.Services;
-using EolBot.Services.Git;
-using EolBot.Services.Git.Abstract;
 using EolBot.Services.LogReader;
 using EolBot.Services.LogReader.Abstract;
 using EolBot.Services.Report;
@@ -17,7 +15,6 @@ using EolBot.Services.Telegram;
 using EolBot.Services.Telegram.Bot;
 using Hangfire;
 using Hangfire.MemoryStorage;
-using LibGit2Sharp;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Serilog;
@@ -34,7 +31,7 @@ namespace EolBot
             // Setup settings.
             builder.Services.Configure<TelegramSettings>(builder.Configuration.GetSection("Telegram"));
             builder.Services.Configure<ReportSettings>(builder.Configuration.GetSection("Report"));
-            builder.Services.Configure<RepositorySettings>(builder.Configuration.GetSection("Repository"));
+            builder.Services.Configure<EndOfLifeDateSettings>(builder.Configuration.GetSection("EndOfLifeDate"));
             builder.Services.Configure<LogReaderSettings>(builder.Configuration.GetSection("LogReader"));
 
             // Setup repositories.
@@ -43,17 +40,19 @@ namespace EolBot
             builder.Services.AddScoped<IReportRepository, DatabaseReportRepository>();
 
             // Setup report services.
-            builder.Services.AddSingleton<IGitService, LibGitService>(sp =>
-                new LibGitService(
-                    new Signature(nameof(EolBot), $"no@email.com", DateTime.UtcNow)));
             builder.Services.AddHttpClient("endoflifedate_client").RemoveAllLoggers()
-                .AddTypedClient<IEndOfLifeDateClient>((httpClient) =>
+                .AddTypedClient<IEndOfLifeDateClient>((httpClient, sp) =>
                 {
-                    httpClient.BaseAddress = new Uri("https://endoflife.date/api/v1/");
-                    httpClient.Timeout = TimeSpan.FromSeconds(30);
+                    EndOfLifeDateSettings? settings = sp.GetService<IOptions<EndOfLifeDateSettings>>()?.Value;
+                    ArgumentNullException.ThrowIfNull(settings);
+                    httpClient.BaseAddress = new Uri(settings.ApiUrl);
+                    if (settings.ConnectionTimeout.HasValue)
+                    {
+                        httpClient.Timeout = TimeSpan.FromSeconds(settings.ConnectionTimeout.Value);
+                    }
                     return new EndOfLifeDateClient(httpClient);
                 });
-            builder.Services.AddSingleton<IReportDataProvider, EndoflifeDateProvider>();
+            builder.Services.AddSingleton<IReportDataProvider, EndofLifeDateProvider>();
             builder.Services.AddSingleton<IReport, EndoflifeDateDailyReport>();
 
             // Setup Telegram services.
@@ -61,9 +60,9 @@ namespace EolBot
             builder.Services.AddHttpClient("telegram_bot_client").RemoveAllLoggers()
                 .AddTypedClient<ITelegramBotClient>((httpClient, sp) =>
                 {
-                    TelegramSettings? telegramSettings = sp.GetService<IOptions<TelegramSettings>>()?.Value;
-                    ArgumentNullException.ThrowIfNull(telegramSettings);
-                    TelegramBotClientOptions options = new(telegramSettings.BotToken);
+                    TelegramSettings? settings = sp.GetService<IOptions<TelegramSettings>>()?.Value;
+                    ArgumentNullException.ThrowIfNull(settings);
+                    TelegramBotClientOptions options = new(settings.BotToken);
                     return new TelegramBotClient(options, httpClient);
                 });
             builder.Services.AddScoped<UpdateHandler>();

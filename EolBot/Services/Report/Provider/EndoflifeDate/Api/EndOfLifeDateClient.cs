@@ -5,9 +5,9 @@ namespace EolBot.Services.Report.Provider.EndoflifeDate.Api
 {
     public class EndOfLifeDateClient(HttpClient httpClient) : IEndOfLifeDateClient
     {
-        public async Task<ProductListResponse?> GetProductsAsync(CancellationToken cancellationToken = default)
+        public async Task<FullProductListResponse?> GetFullProductsAsync(CancellationToken cancellationToken = default)
         {
-            return await httpClient.GetFromJsonAsync<ProductListResponse>("products", cancellationToken);
+            return await httpClient.GetFromJsonAsync<FullProductListResponse>("products/full", cancellationToken);
         }
     }
 }
