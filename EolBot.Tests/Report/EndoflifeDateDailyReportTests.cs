@@ -52,7 +52,7 @@ namespace EolBot.Tests.Report
                 Mon, 07 Jan:
                 None
 
-                <i>Source: https://github.com/endoflife-date/release-data</i>
+                <i>Source: https://endoflife.date</i>
                 """, actual);
         }
 
@@ -88,7 +88,7 @@ namespace EolBot.Tests.Report
                 Mon, 07 Jan:
                 None
                 
-                <i>Source: https://github.com/endoflife-date/release-data</i>
+                <i>Source: https://endoflife.date</i>
                 """, actual);
         }
     }

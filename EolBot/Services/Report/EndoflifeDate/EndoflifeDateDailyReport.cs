@@ -22,7 +22,7 @@ namespace EolBot.Services.Report.EndoflifeDate
             return $"""
                 End-of-life (EOL) calendar for the next {CountDays(fromInclusive, toInclusive)} days:
                 {CreateBody(fromInclusive, toInclusive, items)}
-                <i>Source: https://github.com/endoflife-date/release-data</i>
+                <i>Source: https://endoflife.date</i>
                 """;
         }
 
