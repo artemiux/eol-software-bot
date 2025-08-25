@@ -2,6 +2,8 @@ using EolBot.Database;
 using EolBot.Repositories;
 using EolBot.Repositories.Abstract;
 using EolBot.Services;
+using EolBot.Services.Localization;
+using EolBot.Services.Localization.Abstract;
 using EolBot.Services.LogReader;
 using EolBot.Services.LogReader.Abstract;
 using EolBot.Services.Report;
@@ -81,6 +83,9 @@ namespace EolBot
             builder.Services.AddSingleton<ILogReader, FileLogReader>();
             builder.Services.AddSerilog((services, loggerConfiguration) => loggerConfiguration
                 .ReadFrom.Configuration(builder.Configuration));
+
+            // Setup localization.
+            builder.Services.AddSingleton<ILocalizationService, LocalizationService>();
 
             var host = builder.Build();
 

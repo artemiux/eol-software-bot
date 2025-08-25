@@ -9,11 +9,11 @@ namespace EolBot.Database.Configurations
         public void Configure(EntityTypeBuilder<Report> builder)
         {
             builder
-                .Property(u => u.Data)
-                .HasMaxLength(4096);
+                .HasMany(x => x.Content)
+                .WithOne();
 
             builder
-                .Property(u => u.CreatedAt)
+                .Property(x => x.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP");
         }
     }

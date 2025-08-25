@@ -8,9 +8,9 @@ namespace EolBot.Repositories.Abstract
         Task<PaginatedResult<User>> GetAsync(
             Expression<Func<User, bool>>? filter = null, int? start = 1, int? limit = 50);
 
-        Task SubscribeAsync(long telegramId);
+        Task SubscribeAsync(long telegramId, string? lang = null);
 
-        Task UnsubscribeAsync(long telegramId);
+        Task UnsubscribeAsync(long telegramId, string? lang = null);
 
         Task<StatsItem> GetStatsAsync();
 

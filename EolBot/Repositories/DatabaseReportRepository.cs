@@ -1,6 +1,7 @@
 ﻿using EolBot.Database;
 using EolBot.Models;
 using EolBot.Repositories.Abstract;
+using EolBot.Services.Report;
 using Microsoft.EntityFrameworkCore;
 
 namespace EolBot.Repositories
@@ -9,11 +10,13 @@ namespace EolBot.Repositories
     {
         private bool disposedValue;
 
-        public async Task<Report> AddAsync(string text)
+        public async Task<Report> AddAsync(DateTime from, DateTime to, IEnumerable<ReportItem> content)
         {
             var report = new Report
             {
-                Data = text
+                From = from,
+                To = to,
+                Content = [.. content.Select(x => new ReportContent(x.ProductName, x.ProductVersion, x.Eol, x.ProductUrl))]
             };
             context.Add(report);
             await context.SaveChangesAsync();
@@ -27,7 +30,7 @@ namespace EolBot.Repositories
 
         public Task<Report?> LastAsync()
         {
-            return GetQueryable()
+            return GetQueryable().Include(x => x.Content)
                 .OrderBy(r => r.CreatedAt)
                 .LastOrDefaultAsync();
         }

@@ -5,6 +5,7 @@ using EolBot.Services.Report;
 using EolBot.Services.Report.Abstract;
 using EolBot.Services.Report.Provider.Abstract;
 using Microsoft.Extensions.Options;
+using System.Collections.Concurrent;
 using System.Net;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
@@ -15,7 +16,7 @@ namespace EolBot.Services.Telegram
     public class TelegramSender(
         IOptions<ReportSettings> reportOptions,
         IReportDataProvider provider,
-        IReport report,
+        IReport reportService,
         IServiceScopeFactory scopeFactory,
         ITelegramBotClient botClient,
         ILogger<TelegramSender> logger)
@@ -30,6 +31,8 @@ namespace EolBot.Services.Telegram
         };
         private readonly int _databaseRequestLimit = reportOptions.Value.MaxConcurrentMessages * 10;
 
+        private readonly ConcurrentDictionary<string, string> _reports = new();
+
         public async Task<SendingResult> SendReportAsync(DateTime fromInclusive, DateTime toInclusive,
             CancellationToken stoppingToken = default)
         {
@@ -42,12 +45,12 @@ namespace EolBot.Services.Telegram
                 Active = true;
             }
 
-            string text;
+            IEnumerable<ReportItem> items;
             try
             {
-                text = report.Create(fromInclusive, toInclusive,
-                    items: await provider.GetAsync(fromInclusive, toInclusive, stoppingToken));
-                logger.LogInformation("Report created:\n{Text}", text);
+                items = await provider.GetAsync(fromInclusive, toInclusive, stoppingToken);
+                _reports.TryAdd("default", reportService.Create(fromInclusive, toInclusive, items));
+                logger.LogInformation("Report created:\n{Text}", reportService.Create(fromInclusive, toInclusive, items));
             }
             catch (Exception ex)
             {
@@ -60,7 +63,7 @@ namespace EolBot.Services.Telegram
             var reportRepository = scope.ServiceProvider.GetRequiredService<IReportRepository>();
             try
             {
-                await reportRepository.AddAsync(text);
+                await reportRepository.AddAsync(fromInclusive, toInclusive, items);
             }
             catch (Exception ex)
             {
@@ -100,6 +103,9 @@ namespace EolBot.Services.Telegram
 
                 await Parallel.ForEachAsync(result.Result, _parallelOptions, async (user, ct) =>
                 {
+                    string text = _reports.GetOrAdd(
+                        key: user.LanguageCode ?? "default",
+                        valueFactory: (key) => reportService.Create(fromInclusive, toInclusive, items, key));
                     if (await SendMessage(user.TelegramId, text, userRepository))
                     {
                         Interlocked.Increment(ref sent);

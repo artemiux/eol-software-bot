@@ -1,13 +1,14 @@
-﻿using EolBot.Services.Report.Abstract;
+﻿using EolBot.Services.Localization.Abstract;
+using EolBot.Services.Report.Abstract;
 using System.Globalization;
 using System.Text;
 
 namespace EolBot.Services.Report.EndoflifeDate
 {
-    public class EndoflifeDateDailyReport : IReport
+    public class EndoflifeDateDailyReport(ILocalizationService localizer) : IReport
     {
         public string Create(DateTime fromInclusive, DateTime toInclusive,
-            IEnumerable<ReportItem> items)
+            IEnumerable<ReportItem> items, string? lang = null)
         {
             if (fromInclusive > toInclusive)
             {
@@ -20,22 +21,25 @@ namespace EolBot.Services.Report.EndoflifeDate
             }
 
             return $"""
-                End-of-life (EOL) calendar for the next {CountDays(fromInclusive, toInclusive)} days:
-                {CreateBody(fromInclusive, toInclusive, items)}
-                <i>Source: https://endoflife.date</i>
+                {string.Format(localizer.GetString("ReportHeader", lang), CountDays(fromInclusive, toInclusive))}:
+                {CreateBody(fromInclusive, toInclusive, items, lang)}
+                <i>{localizer.GetString("Source", lang)}: https://endoflife.date</i>
                 """;
         }
 
         private string CreateBody(DateTime fromInclusive, DateTime toInclusive,
-            IEnumerable<ReportItem> items)
+            IEnumerable<ReportItem> items, string? lang = null)
         {
-            var sb = new StringBuilder();
+            var culture = lang != null
+                && localizer.Cultures.Any(x => string.Equals(x.Name, lang, StringComparison.OrdinalIgnoreCase))
+                ? new CultureInfo(lang) : CultureInfo.InvariantCulture;
 
+            var sb = new StringBuilder();
             var startDate = fromInclusive.Date;
             while (startDate <= toInclusive)
             {
                 sb.AppendLine();
-                sb.AppendLine(startDate.ToString("ddd, dd MMM:", CultureInfo.InvariantCulture));
+                sb.AppendLine(startDate.ToString("ddd, dd MMM:", culture));
                 var matchedItems = items
                     .Where(item => item.Eol.Date == startDate.Date);
                 if (matchedItems.Any())
@@ -47,7 +51,7 @@ namespace EolBot.Services.Report.EndoflifeDate
                 }
                 else
                 {
-                    sb.AppendLine("None");
+                    sb.AppendLine(localizer.GetString("None", lang));
                 }
                 startDate = startDate.AddDays(1);
             }

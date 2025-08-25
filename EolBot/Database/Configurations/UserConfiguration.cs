@@ -9,14 +9,18 @@ namespace EolBot.Database.Configurations
         public void Configure(EntityTypeBuilder<User> builder)
         {
             builder
-                .HasKey(u => u.TelegramId);
+                .HasKey(x => x.TelegramId);
 
             builder
-                .Property(u => u.TelegramId)
+                .Property(x => x.TelegramId)
                 .ValueGeneratedNever();
 
             builder
-                .Property(u => u.CreatedAt)
+                .Property(x => x.LanguageCode)
+                .HasMaxLength(5);
+
+            builder
+                .Property(x => x.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP");
         }
     }

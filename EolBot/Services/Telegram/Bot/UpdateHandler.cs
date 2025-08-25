@@ -1,7 +1,9 @@
-﻿using EolBot.Repositories.Abstract;
+﻿using EolBot.Extensions;
+using EolBot.Repositories.Abstract;
+using EolBot.Services.Localization.Abstract;
 using EolBot.Services.LogReader;
 using EolBot.Services.LogReader.Abstract;
-using EolBot.Services.Report;
+using EolBot.Services.Report.Abstract;
 using Hangfire;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -17,17 +19,17 @@ namespace EolBot.Services.Telegram.Bot
 {
     class UpdateHandler(
         IOptions<TelegramSettings> telegramOptions,
-        IOptions<ReportSettings> reportOptions,
         ITelegramBotClient bot,
         TelegramSender sender,
+        IReport reportService,
         IServiceScopeFactory scopeFactory,
         ILogReader logReader,
         IOptions<LogReaderSettings> logReaderOptions,
         IBackgroundJobClient jobClient,
+        ILocalizationService localizer,
         ILogger<UpdateHandler> logger) : IUpdateHandler
     {
         private readonly TelegramSettings _telegramSettings = telegramOptions.Value;
-        private readonly ReportSettings _reportSettings = reportOptions.Value;
         private readonly LogReaderSettings _logReaderSettings = logReaderOptions.Value;
 
         private string? _sendingJobId;
@@ -84,18 +86,18 @@ namespace EolBot.Services.Telegram.Bot
             bool isAdmin = user.Id == _telegramSettings.AdminChatId;
             Message sentMessage = await (messageText.Split(' ', StringSplitOptions.TrimEntries)[0] switch
             {
-                "/report" => Report(user, chat),
-                "/subscribe" => Subscribe(user, chat),
-                "/unsubscribe" => Unsubscribe(user, chat),
+                "/report" => Report(user, chat, user.LanguageCode),
+                "/subscribe" => Subscribe(user, chat, user.LanguageCode),
+                "/unsubscribe" => Unsubscribe(user, chat, user.LanguageCode),
                 "/logs" when isAdmin => Logs(chat),
                 "/send" when isAdmin => Send(chat, messageText),
                 "/stats" when isAdmin => Stats(chat),
-                _ => Usage(chat)
+                _ => Usage(chat, user.LanguageCode)
             });
             logger.LogInformation("The message was sent with id: {SentMessageId}", sentMessage.Id);
         }
 
-        private async Task<Message> Report(User user, Chat chat)
+        private async Task<Message> Report(User user, Chat chat, string? lang)
         {
             logger.LogInformation("User {UserId} requested report", user.Id.ToString());
 
@@ -109,46 +111,49 @@ namespace EolBot.Services.Telegram.Bot
             catch (Exception ex)
             {
                 logger.LogError(ex, "Failed to get last report");
-                return await bot.SendMessage(chat, "Something went wrong. Try again later.");
+                return await bot.SendMessage(chat, localizer.GetString("UnknownError", lang));
             }
 
-            return await bot.SendMessage(chat,
-                text: report?.Data ?? "Report isn’t ready yet.",
-                parseMode: ParseMode.Html);
+            var text = report == null
+                ? localizer.GetString("ReportNotFound", lang)
+                : reportService.Create(report.From, report.To,
+                    items: report.Content.Select(x => x.ConvertToReportItem()),
+                    lang: user.LanguageCode);
+            return await bot.SendMessage(chat, text, parseMode: ParseMode.Html);
         }
 
         #region Subscription commands
-        private async Task<Message> Subscribe(User user, Chat chat)
+        private async Task<Message> Subscribe(User user, Chat chat, string? lang)
         {
             using var scope = scopeFactory.CreateScope();
             var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
             try
             {
-                await userRepository.SubscribeAsync(user.Id);
+                await userRepository.SubscribeAsync(user.Id, user.LanguageCode);
                 logger.LogInformation("Subscribed user: {UserId} ({UserFirstName})", user.Id, user.FirstName);
-                return await bot.SendMessage(chat, "You have subscribed!");
+                return await bot.SendMessage(chat, localizer.GetString("Subscribed", lang));
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "Failed to subscribe user: {UserId} ({UserFirstName})", user.Id, user.FirstName);
-                return await bot.SendMessage(chat, "Something went wrong. Try again later.");
+                return await bot.SendMessage(chat, localizer.GetString("UnknownError", lang));
             }
         }
 
-        private async Task<Message> Unsubscribe(User user, Chat chat)
+        private async Task<Message> Unsubscribe(User user, Chat chat, string? lang)
         {
             using var scope = scopeFactory.CreateScope();
             var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
             try
             {
-                await userRepository.UnsubscribeAsync(user.Id);
+                await userRepository.UnsubscribeAsync(user.Id, user.LanguageCode);
                 logger.LogInformation("Unsubscribed user: {UserId} ({UserFirstName})", user.Id, user.FirstName);
-                return await bot.SendMessage(chat, "You have unsubscribed!");
+                return await bot.SendMessage(chat, localizer.GetString("Unsubscribed", lang));
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "Failed to unsubscribe user: {UserId} ({UserFirstName})", user.Id, user.FirstName);
-                return await bot.SendMessage(chat, "Something went wrong. Try again later.");
+                return await bot.SendMessage(chat, localizer.GetString("UnknownError", lang));
             }
         }
         #endregion
@@ -302,10 +307,9 @@ namespace EolBot.Services.Telegram.Bot
         }
         #endregion
 
-        private async Task<Message> Usage(Chat chat)
+        private async Task<Message> Usage(Chat chat, string? lang)
         {
-            const string usage = "Use /report to see this week’s summary. Use /subscribe to receive such reports every Monday. You can cancel your subscription at any time.";
-            return await bot.SendMessage(chat, usage);
+            return await bot.SendMessage(chat, localizer.GetString("Usage", lang));
         }
 
         private Task UnknownUpdateHandlerAsync(Update update)

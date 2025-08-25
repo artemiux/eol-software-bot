@@ -1,14 +1,30 @@
-﻿using EolBot.Services.Report;
+﻿using EolBot.Services.Localization.Abstract;
+using EolBot.Services.Report;
 using EolBot.Services.Report.EndoflifeDate;
+using Moq;
 
 namespace EolBot.Tests.Report
 {
     public class EndoflifeDateDailyReportTests
     {
+        private readonly ILocalizationService _localizer;
+
+        public EndoflifeDateDailyReportTests()
+        {
+            var mockLocalizer = new Mock<ILocalizationService>();
+            mockLocalizer.Setup(x => x.GetString("ReportHeader", null))
+                .Returns("Products whose support ends in the next 7 days");
+            mockLocalizer.Setup(x => x.GetString("None", null))
+                .Returns("None");
+            mockLocalizer.Setup(x => x.GetString("Source", null))
+                .Returns("Source");
+            _localizer = mockLocalizer.Object;
+        }
+
         [Fact]
         public void Create_ReturnsNotEmptyReport_WhenTwoMatchingItemsProvided()
         {
-            var report = new EndoflifeDateDailyReport();
+            var report = new EndoflifeDateDailyReport(_localizer);
             var from = new DateTime(2199, 1, 1, 0, 0, 0);
             var to = new DateTime(2199, 1, 7, 0, 0, 0);
             var actual = report.Create(from, to, [
@@ -29,7 +45,7 @@ namespace EolBot.Tests.Report
                 ]);
 
             Assert.Equal("""
-                End-of-life (EOL) calendar for the next 7 days:
+                Products whose support ends in the next 7 days:
 
                 Tue, 01 Jan:
                 — <a href="https://endoflife.date/product-a"><b>Product A 1.0</b></a>
@@ -59,13 +75,13 @@ namespace EolBot.Tests.Report
         [Fact]
         public void Create_ReturnsEmptyReport_WhenNoItemsProvided()
         {
-            var report = new EndoflifeDateDailyReport();
+            var report = new EndoflifeDateDailyReport(_localizer);
             var from = new DateTime(2199, 1, 1, 0, 0, 0);
             var to = new DateTime(2199, 1, 7, 0, 0, 0);
             var actual = report.Create(from, to, []);
 
             Assert.Equal("""
-                End-of-life (EOL) calendar for the next 7 days:
+                Products whose support ends in the next 7 days:
 
                 Tue, 01 Jan:
                 None

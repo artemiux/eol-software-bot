@@ -4,7 +4,11 @@
     {
         public int Id { get; set; }
 
-        public required string Data { get; set; }
+        public DateTime From { get; set; }
+
+        public DateTime To { get; set; }
+
+        public ICollection<ReportContent> Content { get; set; } = [];
 
         public DateTime CreatedAt { get; set; }
     }

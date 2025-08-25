@@ -44,7 +44,7 @@ namespace EolBot.Repositories
             };
         }
 
-        public async Task SubscribeAsync(long telegramId)
+        public async Task SubscribeAsync(long telegramId, string? lang = null)
         {
             var user = await context.Users.FindAsync(telegramId);
             var now = DateTime.UtcNow;
@@ -54,6 +54,7 @@ namespace EolBot.Repositories
                 {
                     TelegramId = telegramId,
                     IsActive = true,
+                    LanguageCode = lang,
                     SubscribedAt = now,
                     CreatedAt = now
                 });
@@ -61,12 +62,13 @@ namespace EolBot.Repositories
             else if (!user.IsActive)
             {
                 user.IsActive = true;
+                user.LanguageCode = lang;
                 user.SubscribedAt = now;
             }
             await context.SaveChangesAsync();
         }
 
-        public async Task UnsubscribeAsync(long telegramId)
+        public async Task UnsubscribeAsync(long telegramId, string? lang = null)
         {
             var user = await context.Users.FindAsync(telegramId);
             if (user == null)
@@ -75,12 +77,14 @@ namespace EolBot.Repositories
                 {
                     TelegramId = telegramId,
                     IsActive = false,
+                    LanguageCode = lang,
                     CreatedAt = DateTime.UtcNow
                 });
             }
             else if (user.IsActive)
             {
                 user.IsActive = false;
+                user.LanguageCode = lang;
                 user.SubscribedAt = null;
             }
             await context.SaveChangesAsync();

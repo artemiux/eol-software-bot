@@ -2,6 +2,6 @@
 {
     public interface IReport
     {
-        string Create(DateTime fromInclusive, DateTime toInclusive, IEnumerable<ReportItem> items);
+        string Create(DateTime fromInclusive, DateTime toInclusive, IEnumerable<ReportItem> items, string? lang = null);
     }
 }
