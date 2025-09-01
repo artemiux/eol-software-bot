@@ -121,7 +121,7 @@
     <value>Nenhum</value>
   </data>
   <data name="ReportHeader" xml:space="preserve">
-    <value>Produtos cujo suporte termina nos próximos {0} dias</value>
+    <value>Produtos cujo suporte termina nesta semana</value>
   </data>
   <data name="ReportNotFound" xml:space="preserve">
     <value>O relatório ainda não está pronto.</value>

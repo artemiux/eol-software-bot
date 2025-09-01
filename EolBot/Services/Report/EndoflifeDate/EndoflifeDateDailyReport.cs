@@ -21,7 +21,7 @@ namespace EolBot.Services.Report.EndoflifeDate
             }
 
             return $"""
-                {string.Format(localizer.GetString("ReportHeader", lang), CountDays(fromInclusive, toInclusive))}:
+                {localizer.GetString("ReportHeader", lang)}:
                 {CreateBody(fromInclusive, toInclusive, items, lang)}
                 <i>{localizer.GetString("Source", lang)}: https://endoflife.date</i>
                 """;

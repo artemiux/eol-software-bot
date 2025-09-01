@@ -70,7 +70,7 @@ namespace EolBot.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Products whose support ends in the next {0} days.
+        ///   Looks up a localized string similar to Products whose support ends this week.
         /// </summary>
         internal static string ReportHeader {
             get {

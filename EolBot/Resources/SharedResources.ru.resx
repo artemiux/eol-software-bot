@@ -121,7 +121,7 @@
     <value>Нет</value>
   </data>
   <data name="ReportHeader" xml:space="preserve">
-    <value>Релизы, поддержка которых закончится в следующие {0} дней</value>
+    <value>Релизы с окончанием поддержки на текущей неделе</value>
   </data>
   <data name="ReportNotFound" xml:space="preserve">
     <value>Отчет еще не готов.</value>
