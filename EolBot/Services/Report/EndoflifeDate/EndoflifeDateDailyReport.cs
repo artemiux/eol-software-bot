@@ -39,7 +39,7 @@ namespace EolBot.Services.Report.EndoflifeDate
             while (startDate <= toInclusive)
             {
                 sb.AppendLine();
-                sb.AppendLine(startDate.ToString("ddd, dd MMM:", culture));
+                sb.AppendLine(startDate.ToString("ddd, d MMM:", culture));
                 var matchedItems = items
                     .Where(item => item.Eol.Date == startDate.Date);
                 if (matchedItems.Any())
