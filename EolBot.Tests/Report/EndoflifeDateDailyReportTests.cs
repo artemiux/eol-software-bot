@@ -47,25 +47,25 @@ namespace EolBot.Tests.Report
             Assert.Equal("""
                 Products whose support ends in the next 7 days:
 
-                Tue, 01 Jan:
+                Tue, 1 Jan:
                 — <a href="https://endoflife.date/product-a"><b>Product A 1.0</b></a>
                 
-                Wed, 02 Jan:
+                Wed, 2 Jan:
                 None
                 
-                Thu, 03 Jan:
+                Thu, 3 Jan:
                 None
                 
-                Fri, 04 Jan:
+                Fri, 4 Jan:
                 None
                 
-                Sat, 05 Jan:
+                Sat, 5 Jan:
                 None
                 
-                Sun, 06 Jan:
+                Sun, 6 Jan:
                 — <a href="https://endoflife.date/product-b"><b>Product B 2.0</b></a>
                 
-                Mon, 07 Jan:
+                Mon, 7 Jan:
                 None
 
                 <i>Source: https://endoflife.date</i>
@@ -83,25 +83,25 @@ namespace EolBot.Tests.Report
             Assert.Equal("""
                 Products whose support ends in the next 7 days:
 
-                Tue, 01 Jan:
+                Tue, 1 Jan:
                 None
                 
-                Wed, 02 Jan:
+                Wed, 2 Jan:
                 None
                 
-                Thu, 03 Jan:
+                Thu, 3 Jan:
                 None
                 
-                Fri, 04 Jan:
+                Fri, 4 Jan:
                 None
                 
-                Sat, 05 Jan:
+                Sat, 5 Jan:
                 None
                 
-                Sun, 06 Jan:
+                Sun, 6 Jan:
                 None
                 
-                Mon, 07 Jan:
+                Mon, 7 Jan:
                 None
                 
                 <i>Source: https://endoflife.date</i>
