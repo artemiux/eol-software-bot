@@ -18,7 +18,7 @@ namespace EolBot.Services.Localization
             _manager = new ResourceManager(typeof(SharedResources));
             _availableCultures = [.. CultureInfo
                 .GetCultures(CultureTypes.AllCultures)
-                .Where(x => _manager.GetResourceSet(x, true, false) != null)];
+                .Where(x => _manager.GetResourceSet(x, true, false) is not null)];
             _logger = logger;
         }
 
@@ -32,8 +32,8 @@ namespace EolBot.Services.Localization
         private string Read(string name, string? lang = null)
         {
             var value = _manager.GetString(name,
-                lang != null ? new CultureInfo(lang) : null);
-            if (value == null)
+                lang is not null ? new CultureInfo(lang) : null);
+            if (value is null)
             {
                 _logger.LogWarning("Missing localization key '{Key}'", name);
             }

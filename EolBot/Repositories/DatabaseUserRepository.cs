@@ -28,7 +28,7 @@ namespace EolBot.Repositories
             }
 
             var query = GetQueryable();
-            if (filter != null)
+            if (filter is not null)
             {
                 query = query.Where(filter);
             }
@@ -48,7 +48,7 @@ namespace EolBot.Repositories
         {
             var user = await context.Users.FindAsync(telegramId);
             var now = DateTime.UtcNow;
-            if (user == null)
+            if (user is null)
             {
                 context.Users.Add(new User
                 {
@@ -71,7 +71,7 @@ namespace EolBot.Repositories
         public async Task UnsubscribeAsync(long telegramId, string? lang = null)
         {
             var user = await context.Users.FindAsync(telegramId);
-            if (user == null)
+            if (user is null)
             {
                 context.Users.Add(new User
                 {

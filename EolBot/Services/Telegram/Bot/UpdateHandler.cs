@@ -114,7 +114,7 @@ namespace EolBot.Services.Telegram.Bot
                 return await bot.SendMessage(chat, localizer.GetString("UnknownError", lang));
             }
 
-            var text = report == null
+            var text = report is null
                 ? localizer.GetString("ReportNotFound", lang)
                 : reportService.Create(report.From, report.To,
                     items: report.Content.Select(x => x.ConvertToReportItem()),
@@ -182,7 +182,7 @@ namespace EolBot.Services.Telegram.Bot
         private async Task<Message> Send(Chat chat, string messageText)
         {
             var parts = messageText.Split(' ', StringSplitOptions.TrimEntries);
-            if (parts.Length == 2 && parts[1] == "start")
+            if (parts is [_, "start"])
             {
                 if (sender.Active)
                 {
@@ -200,7 +200,7 @@ namespace EolBot.Services.Telegram.Bot
                         [("Yes", "send start"), ("No", "cancel")]
                     });
             }
-            else if (parts.Length == 2 && parts[1] == "stop")
+            else if (parts is [_, "stop"])
             {
                 if (IsSendingJobCompletedOrNotExist())
                 {
@@ -240,15 +240,14 @@ namespace EolBot.Services.Telegram.Bot
 
         private bool IsSendingJobCompletedOrNotExist()
         {
-            if (_sendingJobId == null)
+            if (_sendingJobId is null)
             {
                 return true;
             }
 
             using var connection = JobStorage.Current.GetConnection();
             var jobData = connection.GetJobData(_sendingJobId);
-            return jobData == null ||
-                   (jobData.State == "Succeeded" || jobData.State == "Deleted" || jobData.State == "Failed");
+            return jobData is null || jobData is { State: "Succeeded" or "Deleted" or "Failed" };
         }
         #endregion
 

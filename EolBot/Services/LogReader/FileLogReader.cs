@@ -26,8 +26,7 @@ namespace EolBot.Services.LogReader
             using var reader = new StreamReader(fs);
 
             LinkedList<string> result = new();
-            string? line;
-            while ((line = await reader.ReadLineAsync()) != null)
+            while (await reader.ReadLineAsync() is { } line)
             {
                 result.AddLast(line);
                 // Keep in memory no more than `count` lines.

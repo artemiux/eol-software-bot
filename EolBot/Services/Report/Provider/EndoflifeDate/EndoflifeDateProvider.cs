@@ -25,12 +25,12 @@ namespace EolBot.Services.Report.Provider.EndoflifeDate
                     {
                         eol = release.EolFrom;
                     }
-                    else if (release.IsEoas.HasValue && release.IsEoas == false
+                    else if (release is { IsEoas: false }
                         && release.EoasFrom >= fromInclusive && release.EoasFrom <= toInclusive)
                     {
                         eol = release.EoasFrom;
                     }
-                    else if (release.IsEoes.HasValue && release.IsEoes == false
+                    else if (release is { IsEoes: false }
                         && release.EoesFrom >= fromInclusive && release.EoesFrom <= toInclusive)
                     {
                         eol = release.EoesFrom;
