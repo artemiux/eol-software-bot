@@ -25,6 +25,11 @@ namespace EolBot.Services.Report.EndoflifeDate
                 {CreateBody(fromInclusive, toInclusive, items, lang)}
                 <i>{localizer.GetString("Source", lang)}: https://endoflife.date</i>
                 """;
+
+            static double CountDays(DateTime fromInclusive, DateTime toInclusive)
+            {
+                return (toInclusive - fromInclusive).TotalDays + 1;
+            }
         }
 
         private string CreateBody(DateTime fromInclusive, DateTime toInclusive,
@@ -57,11 +62,6 @@ namespace EolBot.Services.Report.EndoflifeDate
             }
 
             return sb.ToString();
-        }
-
-        private double CountDays(DateTime fromInclusive, DateTime toInclusive)
-        {
-            return (toInclusive - fromInclusive).TotalDays + 1;
         }
     }
 }
