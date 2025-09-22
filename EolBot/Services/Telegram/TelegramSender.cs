@@ -148,7 +148,7 @@ namespace EolBot.Services.Telegram
                 sent = true;
             }
             catch (ApiRequestException ex)
-                when (ex.HttpStatusCode == HttpStatusCode.Forbidden)
+                when (ex.ErrorCode == 403)
             {
                 await _lock.WaitAsync();
                 try
