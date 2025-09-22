@@ -31,8 +31,6 @@ namespace EolBot.Services.Telegram
         };
         private readonly int _databaseRequestLimit = reportOptions.Value.MaxConcurrentMessages * 10;
 
-        private readonly ConcurrentDictionary<string, string> _reports = new();
-
         public async Task<SendingResult> SendReportAsync(DateTime fromInclusive, DateTime toInclusive,
             CancellationToken stoppingToken = default)
         {
@@ -45,11 +43,12 @@ namespace EolBot.Services.Telegram
                 Active = true;
             }
 
+            ConcurrentDictionary<string, string> reports = new();
             IEnumerable<ReportItem> items;
             try
             {
                 items = await provider.GetAsync(fromInclusive, toInclusive, stoppingToken);
-                _reports.TryAdd("default", reportService.Create(fromInclusive, toInclusive, items));
+                reports.TryAdd("default", reportService.Create(fromInclusive, toInclusive, items));
                 logger.LogInformation("Report created:\n{Text}", reportService.Create(fromInclusive, toInclusive, items));
             }
             catch (Exception ex)
@@ -103,7 +102,7 @@ namespace EolBot.Services.Telegram
 
                 await Parallel.ForEachAsync(result.Result, _parallelOptions, async (user, ct) =>
                 {
-                    string text = _reports.GetOrAdd(
+                    string text = reports.GetOrAdd(
                         key: user.LanguageCode ?? "default",
                         valueFactory: (key) => reportService.Create(fromInclusive, toInclusive, items, key));
                     if (await SendMessage(user.TelegramId, text, userRepository))
