@@ -34,13 +34,18 @@ namespace EolBot.Services.Telegram
         public async Task<SendingResult> SendReportAsync(DateTime fromInclusive, DateTime toInclusive,
             CancellationToken stoppingToken = default)
         {
-            lock (this)
+            _lock.Wait(stoppingToken);
+            try
             {
                 if (Active)
                 {
                     return new SendingResult(Error: "ConcurrentError", ErrorMessage: "Process already active.");
                 }
                 Active = true;
+            }
+            finally
+            {
+                _lock.Release();
             }
 
             ConcurrentDictionary<string, string> reports = new();
