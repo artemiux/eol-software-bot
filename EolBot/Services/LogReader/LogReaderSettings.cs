@@ -2,8 +2,8 @@
 {
     public class LogReaderSettings
     {
-        public int MaxLines { get; set; }
+        public int MaxLines { get; init; }
 
-        public int MaxLineLength { get; set; }
+        public int MaxLineLength { get; init; }
     }
 }

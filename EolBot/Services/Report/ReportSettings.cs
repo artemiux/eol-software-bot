@@ -2,8 +2,8 @@
 {
     public class ReportSettings
     {
-        public required int DaysToCover { get; set; }
+        public required int DaysToCover { get; init; }
 
-        public required int MaxConcurrentMessages { get; set; }
+        public required int MaxConcurrentMessages { get; init; }
     }
 }

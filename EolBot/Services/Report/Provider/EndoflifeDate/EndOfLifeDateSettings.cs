@@ -2,8 +2,8 @@
 {
     public class EndOfLifeDateSettings
     {
-        public required string ApiUrl { get; set; }
+        public required string ApiUrl { get; init; }
 
-        public int? ConnectionTimeout { get; set; }
+        public int? ConnectionTimeout { get; init; }
     }
 }
