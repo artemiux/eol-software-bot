@@ -5,9 +5,9 @@ namespace EolBot.Extensions
 {
     static class ReportContentExtensions
     {
-        internal static ReportItem ConvertToReportItem(this ReportContent content)
+        extension(ReportContent content)
         {
-            return new ReportItem
+            internal ReportItem ConvertToReportItem() => new()
             {
                 ProductName = content.ProductName,
                 ProductVersion = content.ProductVersion,

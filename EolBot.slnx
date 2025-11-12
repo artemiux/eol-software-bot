@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="docker-compose.dcproj">
+    <Build />
+  </Project>
+  <Project Path="EolBot.Tests/EolBot.Tests.csproj" />
+  <Project Path="EolBot/EolBot.csproj" />
+</Solution>
