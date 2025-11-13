@@ -111,11 +111,11 @@ namespace EolBot.Services.Telegram.Bot
             catch (Exception ex)
             {
                 logger.LogError(ex, "Failed to get last report");
-                return await bot.SendMessage(chat, localizer.GetString("UnknownError", lang));
+                return await bot.SendMessage(chat, localizer["UnknownError", lang]);
             }
 
             var text = report is null
-                ? localizer.GetString("ReportNotFound", lang)
+                ? localizer["ReportNotFound", lang]
                 : reportService.Create(report.From, report.To,
                     items: report.Content.Select(x => x.ConvertToReportItem()),
                     lang: user.LanguageCode);
@@ -131,12 +131,12 @@ namespace EolBot.Services.Telegram.Bot
             {
                 await userRepository.SubscribeAsync(user.Id, user.LanguageCode);
                 logger.LogInformation("Subscribed user: {UserId} ({UserFirstName})", user.Id, user.FirstName);
-                return await bot.SendMessage(chat, localizer.GetString("Subscribed", lang));
+                return await bot.SendMessage(chat, localizer["Subscribed", lang]);
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "Failed to subscribe user: {UserId} ({UserFirstName})", user.Id, user.FirstName);
-                return await bot.SendMessage(chat, localizer.GetString("UnknownError", lang));
+                return await bot.SendMessage(chat, localizer["UnknownError", lang]);
             }
         }
 
@@ -148,12 +148,12 @@ namespace EolBot.Services.Telegram.Bot
             {
                 await userRepository.UnsubscribeAsync(user.Id, user.LanguageCode);
                 logger.LogInformation("Unsubscribed user: {UserId} ({UserFirstName})", user.Id, user.FirstName);
-                return await bot.SendMessage(chat, localizer.GetString("Unsubscribed", lang));
+                return await bot.SendMessage(chat, localizer["Unsubscribed", lang]);
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "Failed to unsubscribe user: {UserId} ({UserFirstName})", user.Id, user.FirstName);
-                return await bot.SendMessage(chat, localizer.GetString("UnknownError", lang));
+                return await bot.SendMessage(chat, localizer["UnknownError", lang]);
             }
         }
         #endregion
@@ -313,7 +313,7 @@ namespace EolBot.Services.Telegram.Bot
 
         private async Task<Message> Usage(Chat chat, string? lang)
         {
-            return await bot.SendMessage(chat, localizer.GetString("Usage", lang));
+            return await bot.SendMessage(chat, localizer["Usage", lang]);
         }
 
         private Task UnknownUpdateHandlerAsync(Update update)

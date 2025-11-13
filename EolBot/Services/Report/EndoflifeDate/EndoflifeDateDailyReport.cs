@@ -21,9 +21,9 @@ namespace EolBot.Services.Report.EndoflifeDate
             }
 
             return $"""
-                {localizer.GetString("ReportHeader", lang)}:
+                {localizer["ReportHeader", lang]}:
                 {CreateBody(fromInclusive, toInclusive, items, lang)}
-                <i>{localizer.GetString("Source", lang)}: https://endoflife.date</i>
+                <i>{localizer["Source", lang]}: https://endoflife.date</i>
                 """;
 
             static double CountDays(DateTime fromInclusive, DateTime toInclusive)
@@ -56,7 +56,7 @@ namespace EolBot.Services.Report.EndoflifeDate
                 }
                 else
                 {
-                    sb.AppendLine(localizer.GetString("None", lang));
+                    sb.AppendLine(localizer["None", lang]);
                 }
                 startDate = startDate.AddDays(1);
             }

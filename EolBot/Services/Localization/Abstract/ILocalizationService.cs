@@ -8,6 +8,6 @@ namespace EolBot.Services.Localization.Abstract
 
         string GetString(string name, string? lang = null);
 
-        string this[string name] { get; }
+        string this[string name, string? lang = null] { get; }
     }
 }

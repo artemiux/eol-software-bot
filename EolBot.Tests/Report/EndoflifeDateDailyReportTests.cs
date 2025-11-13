@@ -12,11 +12,11 @@ namespace EolBot.Tests.Report
         public EndoflifeDateDailyReportTests()
         {
             var mockLocalizer = new Mock<ILocalizationService>();
-            mockLocalizer.Setup(x => x.GetString("ReportHeader", null))
+            mockLocalizer.Setup(x => x["ReportHeader"])
                 .Returns("Products whose support ends in the next 7 days");
-            mockLocalizer.Setup(x => x.GetString("None", null))
+            mockLocalizer.Setup(x => x["None"])
                 .Returns("None");
-            mockLocalizer.Setup(x => x.GetString("Source", null))
+            mockLocalizer.Setup(x => x["Source"])
                 .Returns("Source");
             _localizer = mockLocalizer.Object;
         }
