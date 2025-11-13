@@ -45,18 +45,15 @@ namespace EolBot.Services.Telegram.Bot
             else
             {
                 logger.LogError("HandleError: {Exception}", exception);
-                if (_telegramSettings.AdminChatId != default)
+                try
                 {
-                    try
-                    {
-                        // Notify admin about the error.
-                        await botClient.SendMessage(
-                            chatId: _telegramSettings.AdminChatId,
-                            text: $"[{nameof(EolBot)}] HandleError: {exception.Message}",
-                            cancellationToken: cancellationToken);
-                    }
-                    catch { }
+                    // Notify admin about the error.
+                    await botClient.SendMessage(
+                        chatId: _telegramSettings.AdminChatId,
+                        text: $"[{nameof(EolBot)}] HandleError: {exception.Message}",
+                        cancellationToken: cancellationToken);
                 }
+                catch { }
             }
         }
 
@@ -86,9 +83,9 @@ namespace EolBot.Services.Telegram.Bot
             bool isAdmin = user.Id == _telegramSettings.AdminChatId;
             Message sentMessage = await (messageText.Split(' ', StringSplitOptions.TrimEntries)[0] switch
             {
-                "/report" => Report(user, chat, user.LanguageCode),
-                "/subscribe" => Subscribe(user, chat, user.LanguageCode),
-                "/unsubscribe" => Unsubscribe(user, chat, user.LanguageCode),
+                "/report" => Report(user, chat),
+                "/subscribe" => Subscribe(user, chat),
+                "/unsubscribe" => Unsubscribe(user, chat),
                 "/logs" when isAdmin => Logs(chat),
                 "/send" when isAdmin => Send(chat, messageText),
                 "/stats" when isAdmin => Stats(chat),
@@ -97,7 +94,7 @@ namespace EolBot.Services.Telegram.Bot
             logger.LogInformation("The message was sent with id: {SentMessageId}", sentMessage.Id);
         }
 
-        private async Task<Message> Report(User user, Chat chat, string? lang)
+        private async Task<Message> Report(User user, Chat chat)
         {
             logger.LogInformation("User {UserId} requested report", user.Id.ToString());
 
@@ -111,11 +108,11 @@ namespace EolBot.Services.Telegram.Bot
             catch (Exception ex)
             {
                 logger.LogError(ex, "Failed to get last report");
-                return await bot.SendMessage(chat, localizer["UnknownError", lang]);
+                return await bot.SendMessage(chat, localizer["UnknownError", user.LanguageCode]);
             }
 
             var text = report is null
-                ? localizer["ReportNotFound", lang]
+                ? localizer["ReportNotFound", user.LanguageCode]
                 : reportService.Create(report.From, report.To,
                     items: report.Content.Select(x => x.ConvertToReportItem()),
                     lang: user.LanguageCode);
@@ -123,7 +120,7 @@ namespace EolBot.Services.Telegram.Bot
         }
 
         #region Subscription commands
-        private async Task<Message> Subscribe(User user, Chat chat, string? lang)
+        private async Task<Message> Subscribe(User user, Chat chat)
         {
             using var scope = scopeFactory.CreateScope();
             var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
@@ -131,16 +128,16 @@ namespace EolBot.Services.Telegram.Bot
             {
                 await userRepository.SubscribeAsync(user.Id, user.LanguageCode);
                 logger.LogInformation("Subscribed user: {UserId} ({UserFirstName})", user.Id, user.FirstName);
-                return await bot.SendMessage(chat, localizer["Subscribed", lang]);
+                return await bot.SendMessage(chat, localizer["Subscribed", user.LanguageCode]);
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "Failed to subscribe user: {UserId} ({UserFirstName})", user.Id, user.FirstName);
-                return await bot.SendMessage(chat, localizer["UnknownError", lang]);
+                return await bot.SendMessage(chat, localizer["UnknownError", user.LanguageCode]);
             }
         }
 
-        private async Task<Message> Unsubscribe(User user, Chat chat, string? lang)
+        private async Task<Message> Unsubscribe(User user, Chat chat)
         {
             using var scope = scopeFactory.CreateScope();
             var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
@@ -148,12 +145,12 @@ namespace EolBot.Services.Telegram.Bot
             {
                 await userRepository.UnsubscribeAsync(user.Id, user.LanguageCode);
                 logger.LogInformation("Unsubscribed user: {UserId} ({UserFirstName})", user.Id, user.FirstName);
-                return await bot.SendMessage(chat, localizer["Unsubscribed", lang]);
+                return await bot.SendMessage(chat, localizer["Unsubscribed", user.LanguageCode]);
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "Failed to unsubscribe user: {UserId} ({UserFirstName})", user.Id, user.FirstName);
-                return await bot.SendMessage(chat, localizer["UnknownError", lang]);
+                return await bot.SendMessage(chat, localizer["UnknownError", user.LanguageCode]);
             }
         }
         #endregion
@@ -162,19 +159,22 @@ namespace EolBot.Services.Telegram.Bot
         private async Task<Message> Logs(Chat chat)
         {
             var lines = (await logReader.TailAsync("AppData/Logs/", _logReaderSettings.MaxLines)).ToArray();
+            var effectiveMaxLineLength = _logReaderSettings.MaxLineLength - 3;
             for (int i = 0; i < lines.Length; i++)
             {
                 if (lines[i].Length > _logReaderSettings.MaxLineLength)
                 {
-                    lines[i] = string.Concat(lines[i].AsSpan(0, _logReaderSettings.MaxLineLength - 3), "...");
+                    lines[i] = $"{lines[i].AsSpan(0, effectiveMaxLineLength)}...";
                 }
             }
 
-            string text = WebUtility.HtmlEncode(
-                value: string.Join("\n\n", lines.Length > 0 ? lines : ["No logs found"]));
+            string text = lines.Length > 0
+                ? string.Join("\n\n", lines)
+                : "No logs found";
+            text = WebUtility.HtmlEncode(text);
             if (text.Length > 4085)
             {
-                text = string.Concat(text.AsSpan(0, 4082), "...");
+                text = $"{text.AsSpan(0, 4082)}...";
             }
             return await bot.SendMessage(chat, $"<pre>{text}</pre>", ParseMode.Html);
         }
@@ -191,7 +191,7 @@ namespace EolBot.Services.Telegram.Bot
 
                 using var scope = scopeFactory.CreateScope();
                 var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
-                int usersToProcess = await userRepository.GetQueryable().CountAsync(u => u.IsActive);
+                int usersToProcess = await userRepository.GetActiveAsync();
                 return await bot.SendMessage(
                     chatId: chat,
                     text: $"The report will be sent to {usersToProcess} users. Proceed?",
@@ -292,7 +292,7 @@ namespace EolBot.Services.Telegram.Bot
             {
                 await bot.SendMessage(chat, "Start sending...", cancellationToken: cancellationToken);
                 _sendingJobId = jobClient.Enqueue<Jobs>(
-                    (jobs) => jobs.SendWeeklyReportAsync(default!));
+                    jobs => jobs.SendWeeklyReportAsync(default!));
             }
         }
 
@@ -311,10 +311,8 @@ namespace EolBot.Services.Telegram.Bot
         }
         #endregion
 
-        private async Task<Message> Usage(Chat chat, string? lang)
-        {
-            return await bot.SendMessage(chat, localizer["Usage", lang]);
-        }
+        private async Task<Message> Usage(Chat chat, string? lang) =>
+            await bot.SendMessage(chat, localizer["Usage", lang]);
 
         private Task UnknownUpdateHandlerAsync(Update update)
         {
