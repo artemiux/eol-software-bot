@@ -12,56 +12,55 @@ namespace EolBot.Services.Report.EndoflifeDate
         {
             if (fromInclusive > toInclusive)
             {
-                throw new ArgumentException($"The '{nameof(fromInclusive)}' must be less than or equal to the '{nameof(toInclusive)}'.");
+                throw new ArgumentException($"'{nameof(fromInclusive)}' must be less than or equal to '{nameof(toInclusive)}'.");
             }
 
-            if (CountDays(fromInclusive, toInclusive) > 31)
+            if (CountDays() > 31)
             {
                 throw new ArgumentException($"The difference between '{nameof(fromInclusive)}' and '{nameof(toInclusive)}' must not exceed 31 days.");
             }
 
             return $"""
                 {localizer["ReportHeader", lang]}:
-                {CreateBody(fromInclusive, toInclusive, items, lang)}
+                {CreateBody()}
                 <i>{localizer["Source", lang]}: https://endoflife.date</i>
                 """;
 
-            static double CountDays(DateTime fromInclusive, DateTime toInclusive)
+            double CountDays()
             {
                 return (toInclusive - fromInclusive).TotalDays + 1;
             }
-        }
 
-        private string CreateBody(DateTime fromInclusive, DateTime toInclusive,
-            IEnumerable<ReportItem> items, string? lang = null)
-        {
-            var culture = lang is not null
-                && localizer.Cultures.Any(x => string.Equals(x.Name, lang, StringComparison.OrdinalIgnoreCase))
-                ? new CultureInfo(lang) : CultureInfo.InvariantCulture;
-
-            var sb = new StringBuilder();
-            var startDate = fromInclusive.Date;
-            while (startDate <= toInclusive)
+            string CreateBody()
             {
-                sb.AppendLine();
-                sb.AppendLine(startDate.ToString("ddd, d MMM:", culture));
-                var matchedItems = items
-                    .Where(item => item.Eol.Date == startDate.Date);
-                if (matchedItems.Any())
-                {
-                    foreach (var item in matchedItems)
-                    {
-                        sb.AppendLine($"— <a href=\"{item.ProductUrl}\"><b>{item.ProductName} {item.ProductVersion}</b></a>");
-                    }
-                }
-                else
-                {
-                    sb.AppendLine(localizer["None", lang]);
-                }
-                startDate = startDate.AddDays(1);
-            }
+                var culture = lang is not null
+                    && localizer.Cultures.Any(x => string.Equals(x.Name, lang, StringComparison.OrdinalIgnoreCase))
+                    ? new CultureInfo(lang) : CultureInfo.InvariantCulture;
 
-            return sb.ToString();
+                var sb = new StringBuilder();
+                var startDate = fromInclusive.Date;
+                while (startDate <= toInclusive)
+                {
+                    sb.AppendLine();
+                    sb.AppendLine(startDate.ToString("ddd, d MMM:", culture));
+                    var matchedItems = items
+                        .Where(item => item.Eol.Date == startDate.Date).ToArray();
+                    if (matchedItems.Length > 0)
+                    {
+                        foreach (var item in matchedItems)
+                        {
+                            sb.AppendLine($"— <a href=\"{item.ProductUrl}\"><b>{item.ProductName} {item.ProductVersion}</b></a>");
+                        }
+                    }
+                    else
+                    {
+                        sb.AppendLine(localizer["None", lang]);
+                    }
+                    startDate = startDate.AddDays(1);
+                }
+
+                return sb.ToString();
+            }
         }
     }
 }
