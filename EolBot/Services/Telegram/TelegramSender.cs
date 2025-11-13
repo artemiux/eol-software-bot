@@ -6,7 +6,6 @@ using EolBot.Services.Report.Abstract;
 using EolBot.Services.Report.Provider.Abstract;
 using Microsoft.Extensions.Options;
 using System.Collections.Concurrent;
-using System.Net;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types.Enums;
@@ -53,8 +52,9 @@ namespace EolBot.Services.Telegram
             try
             {
                 items = await provider.GetAsync(fromInclusive, toInclusive, stoppingToken);
-                reports.TryAdd("default", reportService.Create(fromInclusive, toInclusive, items));
-                logger.LogInformation("Report created:\n{Text}", reportService.Create(fromInclusive, toInclusive, items));
+                string defaultReport = reportService.Create(fromInclusive, toInclusive, items);
+                reports.TryAdd("default", defaultReport);
+                logger.LogInformation("Report created:\n{Text}", defaultReport);
             }
             catch (Exception ex)
             {
@@ -182,6 +182,6 @@ namespace EolBot.Services.Telegram
 
     public record SendingResult(
         bool Ok = false,
-        int? ReportRecipientsCount = 0,
+        int ReportRecipientsCount = 0,
         string? Error = null, string? ErrorMessage = null);
 }
