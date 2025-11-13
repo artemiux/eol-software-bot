@@ -2,8 +2,8 @@
 {
     public class PaginatedResult<TResult>
     {
-        public int? Next { get; set; }
+        public int? Next { get; init; }
 
-        public IEnumerable<TResult> Result { get; set; } = [];
+        public required IEnumerable<TResult> Result { get; init; }
     }
 }
