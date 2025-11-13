@@ -103,7 +103,7 @@ namespace EolBot.Tests.Repositories
             while (start > 0)
             {
                 var current = await _repository.GetAsync(start: start, limit: 1);
-                if (current.Result?.Count() > 0)
+                if (current.Result.Any())
                 {
                     actual.AddRange(current.Result);
                 }
@@ -141,11 +141,11 @@ namespace EolBot.Tests.Repositories
         [Fact]
         public async Task Get_ReturnsAllActiveUsers()
         {
-            var activeUsers = _testUsers.Where(u => u.IsActive);
+            var activeUsers = _testUsers.Where(u => u.IsActive).ToArray();
             var actual = await _repository.GetAsync(
                 filter: u => u.IsActive,
-                limit: activeUsers.Count());
-            Assert.Equal(activeUsers.Count(), actual.Result.Count());
+                limit: activeUsers.Length);
+            Assert.Equal(activeUsers.Length, actual.Result.Count());
             Assert.Null(actual.Next);
         }
     }
