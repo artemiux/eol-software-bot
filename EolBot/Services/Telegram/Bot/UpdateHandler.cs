@@ -227,14 +227,19 @@ namespace EolBot.Services.Telegram.Bot
         {
             using var scope = scopeFactory.CreateScope();
             var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
-            var overallStats = await userRepository.GetStatsAsync();
-            var now = DateTime.UtcNow;
-            var lastStats = await userRepository.GetStatsAsync(now.AddDays(-30), now);
+            
+            var total = await userRepository.GetTotalAsync();
+            var active = await userRepository.GetActiveAsync();
+            
+            var to = DateTime.UtcNow;
+            var from = to.AddDays(-30);
+            var lastTotal = await userRepository.GetTotalAsync(from, to);
+            var lastActive = await userRepository.GetActiveAsync(from, to);
+            
             string text = $"""
-                Total: {overallStats.ActiveUsers}/{overallStats.TotalUsers}
-                Last 30 days: {lastStats.ActiveUsers}/{lastStats.TotalUsers}
+                Overall: {active}/{total}
+                Last 30 days: {lastActive}/{lastTotal}
                 """;
-
             return await bot.SendMessage(chat, text);
         }
 

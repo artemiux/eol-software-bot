@@ -10,13 +10,10 @@ namespace EolBot.Repositories
     {
         private bool disposedValue;
 
-        public virtual IQueryable<User> GetQueryable()
-        {
-            return context.Users.AsNoTracking();
-        }
+        public virtual IQueryable<User> GetQueryable() => context.Users.AsNoTracking();
 
         public async Task<PaginatedResult<User>> GetAsync(Expression<Func<User, bool>>? filter = null,
-            int? start = 1, int? limit = 50)
+            int start = 1, int limit = 50)
         {
             if (start < 1)
             {
@@ -32,9 +29,9 @@ namespace EolBot.Repositories
             {
                 query = query.Where(filter);
             }
-            int skip = start == 1 ? 0 : start.GetValueOrDefault() - 1;
-            int take = limit.GetValueOrDefault();
-            var items = await query.Skip(skip).Take(take).ToListAsync();
+            int skip = start == 1 ? 0 : start - 1;
+            int take = limit;
+            var items = await query.Skip(skip).Take(take).ToArrayAsync();
             int total = await query.CountAsync();
             int last = skip + take;
             return new PaginatedResult<User>
@@ -88,26 +85,6 @@ namespace EolBot.Repositories
                 user.SubscribedAt = null;
             }
             await context.SaveChangesAsync();
-        }
-
-        public async Task<StatsItem> GetStatsAsync()
-        {
-            return await GetStatsAsync(DateTime.MinValue, DateTime.MaxValue);
-        }
-
-        public async Task<StatsItem> GetStatsAsync(DateTime fromInclusive, DateTime toInclusive)
-        {
-            if (fromInclusive > toInclusive)
-            {
-                throw new ArgumentException($"Must be less than or equal to the '{nameof(toInclusive)}'.",
-                    nameof(fromInclusive));
-            }
-
-            var totalUsers = await GetQueryable().CountAsync(u => u.CreatedAt >= fromInclusive
-                && u.CreatedAt <= toInclusive);
-            var activeUsers = await GetQueryable().CountAsync(u => u.IsActive
-                && u.SubscribedAt >= fromInclusive && u.SubscribedAt <= toInclusive);
-            return new StatsItem(totalUsers, activeUsers);
         }
 
         protected virtual void Dispose(bool disposing)

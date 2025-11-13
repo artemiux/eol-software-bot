@@ -23,17 +23,7 @@ namespace EolBot.Repositories
             return report;
         }
 
-        public IQueryable<Report> GetQueryable()
-        {
-            return context.Reports.AsNoTracking();
-        }
-
-        public Task<Report?> LastAsync()
-        {
-            return GetQueryable().Include(x => x.Content)
-                .OrderBy(r => r.CreatedAt)
-                .LastOrDefaultAsync();
-        }
+        public IQueryable<Report> GetQueryable() => context.Reports.AsNoTracking();
 
         protected virtual void Dispose(bool disposing)
         {
