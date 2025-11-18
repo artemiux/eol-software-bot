@@ -159,22 +159,19 @@ namespace EolBot.Services.Telegram.Bot
         private async Task<Message> Logs(Chat chat)
         {
             var lines = (await logReader.TailAsync("AppData/Logs/", _logReaderSettings.MaxLines)).ToArray();
-            var effectiveMaxLineLength = _logReaderSettings.MaxLineLength - 3;
-            for (int i = 0; i < lines.Length; i++)
+            string text;
+            if (lines.Length > 0)
             {
-                if (lines[i].Length > _logReaderSettings.MaxLineLength)
+                for (int i = 0; i < lines.Length; i++)
                 {
-                    lines[i] = $"{lines[i].AsSpan(0, effectiveMaxLineLength)}...";
+                    lines[i] = lines[i].Truncate(_logReaderSettings.MaxLineLength, "…");
                 }
+                text = WebUtility.HtmlEncode(string.Join("\n\n", lines))
+                    .Truncate(4085, "…");
             }
-
-            string text = lines.Length > 0
-                ? string.Join("\n\n", lines)
-                : "No logs found";
-            text = WebUtility.HtmlEncode(text);
-            if (text.Length > 4085)
+            else
             {
-                text = $"{text.AsSpan(0, 4082)}...";
+                text = "No logs found";
             }
             return await bot.SendMessage(chat, $"<pre>{text}</pre>", ParseMode.Html);
         }
@@ -227,15 +224,15 @@ namespace EolBot.Services.Telegram.Bot
         {
             using var scope = scopeFactory.CreateScope();
             var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
-            
+
             var total = await userRepository.GetTotalAsync();
             var active = await userRepository.GetActiveAsync();
-            
+
             var to = DateTime.UtcNow;
             var from = to.AddDays(-30);
             var lastTotal = await userRepository.GetTotalAsync(from, to);
             var lastActive = await userRepository.GetActiveAsync(from, to);
-            
+
             string text = $"""
                 Overall: {active}/{total}
                 Last 30 days: {lastActive}/{lastTotal}
