@@ -6,6 +6,7 @@ using EolBot.Services.Report.Abstract;
 using EolBot.Services.Report.Provider.Abstract;
 using Microsoft.Extensions.Options;
 using System.Collections.Concurrent;
+using System.Text;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types.Enums;
@@ -180,8 +181,43 @@ namespace EolBot.Services.Telegram
         }
     }
 
-    public record SendingResult(
+    public sealed record SendingResult(
         bool Ok = false,
         int ReportRecipientsCount = 0,
-        string? Error = null, string? ErrorMessage = null);
+        string? Error = null, string? ErrorMessage = null)
+    {
+        private bool PrintMembers(StringBuilder builder)
+        {
+            builder
+                .Append(nameof(Ok))
+                .Append(" = ")
+                .Append(Ok)
+                .Append(", ")
+                .Append(nameof(ReportRecipientsCount))
+                .Append(" = ")
+                .Append(ReportRecipientsCount);
+
+            if (Error is not null)
+            {
+                builder
+                    .Append(", ")
+                    .Append(nameof(Error))
+                    .Append(@" = """)
+                    .Append(Error)
+                    .Append('"');
+            }
+
+            if (ErrorMessage is not null)
+            {
+                builder
+                    .Append(", ")
+                    .Append(nameof(ErrorMessage))
+                    .Append(@" = """)
+                    .Append(ErrorMessage)
+                    .Append('"');
+            }
+
+            return true;
+        }
+    }
 }
