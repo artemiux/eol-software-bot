@@ -1,10 +1,13 @@
-﻿namespace EolBot.Services.Report.Provider.EndoflifeDate.Api
+﻿using System.Text.Json.Serialization;
+
+namespace EolBot.Services.Report.Provider.EndoflifeDate.Api
 {
     public class FullProductListResponse
     {
         public required int Total { get; set; }
 
-        public IEnumerable<FullProduct> Result { get; set; } = [];
+        [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
+        public List<FullProduct> Result { get; set; } = [];
     }
 
     public class FullProduct
@@ -15,7 +18,8 @@
 
         public required Link Links { get; set; }
 
-        public IEnumerable<Release> Releases { get; set; } = [];
+        [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
+        public List<Release> Releases { get; set; } = [];
     }
 
     public class Link
