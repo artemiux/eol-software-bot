@@ -6,37 +6,76 @@ namespace EolBot.Services.LogReader
     {
         public async Task<IEnumerable<string>> TailAsync(string path, int count)
         {
-            string filePath;
-            if (File.Exists(path))
+            path = path switch
             {
-                filePath = path;
-            }
-            else if (Directory.Exists(path))
-            {
-                filePath = Directory.EnumerateFiles(path)
+                _ when File.Exists(path) => path,
+                _ when Directory.Exists(path) => Directory.EnumerateFiles(path)
                     .OrderByDescending(File.GetCreationTime)
-                    .FirstOrDefault() ?? throw new ArgumentException($"Directory does not contain any files: {path}.");
-            }
-            else
-            {
-                throw new InvalidOperationException($"Not found: {path}.");
-            }
+                    .FirstOrDefault() ?? throw new ArgumentException($"Directory does not contain any files: {path}."),
+                _ => throw new InvalidOperationException($"Not found: {path}.")
+            };
 
-            using var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            using var reader = new StreamReader(fs);
+            using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
 
-            LinkedList<string> result = new();
-            while (await reader.ReadLineAsync() is string line)
+            var lines = new LinkedList<string>();
+            var line = new LinkedList<char>();
+
+            const int bufferSize = 4096;
+            var buffer = new byte[bufferSize];
+            long position = fs.Length;
+            while (position > 0 && lines.Count < count)
             {
-                result.AddLast(line);
-                // Keep in memory no more than `count` lines.
-                if (result.Count > count)
+                var toRead = (int)Math.Min(bufferSize, position);
+                position -= toRead;
+                fs.Position = position;
+                fs.ReadExactly(buffer, 0, toRead);
+
+                for (int i = toRead - 1; i >= 0; i--)
                 {
-                    result.RemoveFirst();
+                    var c = (char)buffer[i];
+                    if (c != '\n')
+                    {
+                        line.AddFirst(c);
+                    }
+                    // Ignore empty lines.
+                    else if (line.Count > 0)
+                    {
+                        lines.AddFirst(line.AsString());
+                        line.Clear();
+                        // All lines were found while reading the buffer.
+                        if (lines.Count == count)
+                        {
+                            break;
+                        }
+                    }
                 }
             }
 
-            return result;
+            // Add remaining characters.
+            if (line.Count > 0 && lines.Count < count)
+            {
+                lines.AddFirst(line.AsString());
+            }
+
+            return lines;
+        }
+    }
+
+    file static class LinkedListExtensions
+    {
+        extension(LinkedList<char> list)
+        {
+            internal string AsString() =>
+                string.Create(list.Count, list, AsStringCallback);
+        }
+
+        private static void AsStringCallback(Span<char> span, LinkedList<char> list)
+        {
+            int index = 0;
+            foreach (char c in list)
+            {
+                span[index++] = c;
+            }
         }
     }
 }
