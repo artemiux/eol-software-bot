@@ -11,11 +11,11 @@ namespace EolBot.Services.LogReader
                 _ when File.Exists(path) => path,
                 _ when Directory.Exists(path) => Directory.EnumerateFiles(path)
                     .OrderByDescending(File.GetCreationTime)
-                    .FirstOrDefault() ?? throw new ArgumentException($"Directory does not contain any files: {path}."),
-                _ => throw new InvalidOperationException($"Not found: {path}.")
+                    .FirstOrDefault() ?? throw new FileNotFoundException($"Directory '{path}' does not contain any files."),
+                _ => throw new FileNotFoundException()
             };
 
-            using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            await using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
 
             var lines = new LinkedList<string>();
             var line = new LinkedList<char>();
@@ -28,7 +28,7 @@ namespace EolBot.Services.LogReader
                 var toRead = (int)Math.Min(bufferSize, position);
                 position -= toRead;
                 fs.Position = position;
-                fs.ReadExactly(buffer, 0, toRead);
+                await fs.ReadExactlyAsync(buffer, 0, toRead);
 
                 for (int i = toRead - 1; i >= 0; i--)
                 {
