@@ -42,11 +42,11 @@ namespace EolBot
             builder.Services.AddScoped<IReportRepository, DatabaseReportRepository>();
 
             // Setup report services.
-            builder.Services.AddHttpClient("endoflifedate_client").RemoveAllLoggers()
+            builder.Services.AddHttpClient("endoflifedate_client")
+                .RemoveAllLoggers()
                 .AddTypedClient<IEndOfLifeDateClient>((httpClient, sp) =>
                 {
-                    EndOfLifeDateSettings? settings = sp.GetService<IOptions<EndOfLifeDateSettings>>()?.Value;
-                    ArgumentNullException.ThrowIfNull(settings);
+                    EndOfLifeDateSettings settings = sp.GetRequiredService<IOptions<EndOfLifeDateSettings>>().Value;
                     httpClient.BaseAddress = new Uri(settings.ApiUrl);
                     if (settings.ConnectionTimeout.HasValue)
                     {
@@ -59,13 +59,12 @@ namespace EolBot
 
             // Setup Telegram services.
             builder.Services.AddSingleton<TelegramSender>();
-            builder.Services.AddHttpClient("telegram_bot_client").RemoveAllLoggers()
+            builder.Services.AddHttpClient("telegram_bot_client")
+                .RemoveAllLoggers()
                 .AddTypedClient<ITelegramBotClient>((httpClient, sp) =>
                 {
-                    TelegramSettings? settings = sp.GetService<IOptions<TelegramSettings>>()?.Value;
-                    ArgumentNullException.ThrowIfNull(settings);
-                    TelegramBotClientOptions options = new(settings.BotToken);
-                    return new TelegramBotClient(options, httpClient);
+                    TelegramSettings settings = sp.GetRequiredService<IOptions<TelegramSettings>>().Value;
+                    return new TelegramBotClient(new TelegramBotClientOptions(settings.BotToken), httpClient);
                 });
             builder.Services.AddScoped<UpdateHandler>();
             builder.Services.AddScoped<ReceiverService>();
