@@ -6,7 +6,7 @@ using Telegram.Bot;
 
 namespace EolBot.Services
 {
-    class Jobs(
+    partial class Jobs(
         IServiceProvider serviceProvider,
         ILogger<Jobs> logger)
     {
@@ -31,8 +31,15 @@ namespace EolBot.Services
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Failed to notify admin");
+                LogNotificationFailed(logger, ex);
             }
         }
+
+        #region Logging
+
+        [LoggerMessage(LogLevel.Error, "Failed to notify admin")]
+        static partial void LogNotificationFailed(ILogger logger, Exception ex);
+
+        #endregion
     }
 }

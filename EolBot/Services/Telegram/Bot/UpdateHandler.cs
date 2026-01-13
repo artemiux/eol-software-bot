@@ -17,7 +17,7 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace EolBot.Services.Telegram.Bot
 {
-    class UpdateHandler(
+    partial class UpdateHandler(
         IOptions<TelegramSettings> telegramOptions,
         ITelegramBotClient bot,
         TelegramSender sender,
@@ -34,23 +34,23 @@ namespace EolBot.Services.Telegram.Bot
 
         private string? _sendingJobId;
 
-        public async Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, HandleErrorSource source, CancellationToken cancellationToken)
+        public async Task HandleErrorAsync(ITelegramBotClient botClient, Exception ex, HandleErrorSource source, CancellationToken cancellationToken)
         {
-            if (exception is RequestException)
+            if (ex is RequestException)
             {
-                logger.LogError("HandleError: {Message}", exception.Message);
+                LogRequestError(logger, ex.Message);
                 // Cooldown in case of network connection error.
                 await Task.Delay(TimeSpan.FromSeconds(2), cancellationToken);
             }
             else
             {
-                logger.LogError("HandleError: {Exception}", exception);
+                LogErrorHandled(logger, ex);
                 try
                 {
                     // Notify admin about the error.
                     await botClient.SendMessage(
                         chatId: _telegramSettings.AdminChatId,
-                        text: $"[{nameof(EolBot)}] HandleError: {exception.Message}",
+                        text: $"[{nameof(EolBot)}] Error handled: {ex.Message}",
                         cancellationToken: cancellationToken);
                 }
                 catch { }
@@ -70,7 +70,7 @@ namespace EolBot.Services.Telegram.Bot
 
         private async Task OnMessage(Message msg)
         {
-            logger.LogInformation("Receive message type: {MessageType}", msg.Type);
+            LogMessageReceived(logger, msg.Type);
 
             // Process text messages only from users in private chats.
             if (msg.Text is not { } messageText
@@ -91,12 +91,13 @@ namespace EolBot.Services.Telegram.Bot
                 "/stats" when isAdmin => Stats(chat),
                 _ => Usage(chat, user.LanguageCode)
             });
-            logger.LogInformation("The message was sent with id: {SentMessageId}", sentMessage.Id);
+
+            LogMessageSent(logger, sentMessage.Id);
         }
 
         private async Task<Message> Report(User user, Chat chat)
         {
-            logger.LogInformation("User {UserId} requested report", user.Id.ToString());
+            LogReportRequested(logger, user.Id);
 
             using var scope = scopeFactory.CreateScope();
             var reportRepository = scope.ServiceProvider.GetRequiredService<IReportRepository>();
@@ -107,7 +108,7 @@ namespace EolBot.Services.Telegram.Bot
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Failed to get last report");
+                LogReportFailed(logger, ex);
                 return await bot.SendMessage(chat, localizer["UnknownError", user.LanguageCode]);
             }
 
@@ -127,12 +128,12 @@ namespace EolBot.Services.Telegram.Bot
             try
             {
                 await userRepository.SubscribeAsync(user.Id, user.LanguageCode);
-                logger.LogInformation("Subscribed user: {UserId} ({UserFirstName})", user.Id, user.FirstName);
+                LogUserSubscribed(logger, user.Id, user.FirstName);
                 return await bot.SendMessage(chat, localizer["Subscribed", user.LanguageCode]);
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Failed to subscribe user: {UserId} ({UserFirstName})", user.Id, user.FirstName);
+                LogSubscriptionFailed(logger, ex, user.Id, user.FirstName);
                 return await bot.SendMessage(chat, localizer["UnknownError", user.LanguageCode]);
             }
         }
@@ -144,12 +145,12 @@ namespace EolBot.Services.Telegram.Bot
             try
             {
                 await userRepository.UnsubscribeAsync(user.Id, user.LanguageCode);
-                logger.LogInformation("Unsubscribed user: {UserId} ({UserFirstName})", user.Id, user.FirstName);
+                LogUserUnsubscribed(logger, user.Id, user.FirstName);
                 return await bot.SendMessage(chat, localizer["Unsubscribed", user.LanguageCode]);
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Failed to unsubscribe user: {UserId} ({UserFirstName})", user.Id, user.FirstName);
+                LogUnsubscriptionFailed(logger, ex, user.Id, user.FirstName);
                 return await bot.SendMessage(chat, localizer["UnknownError", user.LanguageCode]);
             }
         }
@@ -313,8 +314,45 @@ namespace EolBot.Services.Telegram.Bot
 
         private Task UnknownUpdateHandlerAsync(Update update)
         {
-            logger.LogInformation("Unknown update type: {UpdateType}", update.Type);
+            LogUnknownUpdate(logger, update.Type);
             return Task.CompletedTask;
         }
+
+        #region Logging
+
+        [LoggerMessage(LogLevel.Error, "Request error: {Message}")]
+        static partial void LogRequestError(ILogger logger, string message);
+
+        [LoggerMessage(LogLevel.Error, "Error handled")]
+        static partial void LogErrorHandled(ILogger logger, Exception ex);
+
+        [LoggerMessage(LogLevel.Information, "Receive message type: {MessageType}")]
+        static partial void LogMessageReceived(ILogger logger, MessageType messageType);
+
+        [LoggerMessage(LogLevel.Information, "The message was sent with id: {MessageId}")]
+        static partial void LogMessageSent(ILogger logger, int messageId);
+
+        [LoggerMessage(LogLevel.Information, "User {UserId} requested report")]
+        static partial void LogReportRequested(ILogger logger, long userId);
+
+        [LoggerMessage(LogLevel.Error, "Failed to get last report")]
+        static partial void LogReportFailed(ILogger logger, Exception ex);
+
+        [LoggerMessage(LogLevel.Information, "Subscribed user: {UserId} ({UserFirstName})")]
+        static partial void LogUserSubscribed(ILogger logger, long userId, string userFirstName);
+
+        [LoggerMessage(LogLevel.Error, "Failed to subscribe user: {UserId} ({UserFirstName})")]
+        static partial void LogSubscriptionFailed(ILogger logger, Exception ex, long userId, string userFirstName);
+
+        [LoggerMessage(LogLevel.Information, "Unsubscribed user: {UserId} ({UserFirstName})")]
+        static partial void LogUserUnsubscribed(ILogger logger, long userId, string userFirstName);
+
+        [LoggerMessage(LogLevel.Error, "Failed to unsubscribe user: {UserId} ({UserFirstName})")]
+        static partial void LogUnsubscriptionFailed(ILogger logger, Exception ex, long userId, string userFirstName);
+
+        [LoggerMessage(LogLevel.Information, "Unknown update type: {UpdateType}")]
+        static partial void LogUnknownUpdate(ILogger logger, UpdateType updateType);
+
+        #endregion
     }
 }

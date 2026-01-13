@@ -5,7 +5,7 @@ using System.Resources;
 
 namespace EolBot.Services.Localization
 {
-    public class LocalizationService(ILogger<LocalizationService> logger) : ILocalizationService
+    public partial class LocalizationService(ILogger<LocalizationService> logger) : ILocalizationService
     {
         private readonly ResourceManager _manager = new(typeof(SharedResources));
 
@@ -30,9 +30,16 @@ namespace EolBot.Services.Localization
             var value = _manager.GetString(name, ((ILocalizationService)this).GetCultureOrDefault(lang));
             if (value is null)
             {
-                logger.LogWarning("Missing localization key '{Key}'", name);
+                LogMissingKey(logger, name);
             }
             return value ?? name;
         }
+
+        #region Logging
+
+        [LoggerMessage(LogLevel.Warning, "Missing localization key '{Key}'")]
+        static partial void LogMissingKey(ILogger logger, string key);
+
+        #endregion
     }
 }

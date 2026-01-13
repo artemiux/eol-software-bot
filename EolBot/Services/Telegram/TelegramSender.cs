@@ -13,7 +13,7 @@ using Telegram.Bot.Types.Enums;
 
 namespace EolBot.Services.Telegram
 {
-    public class TelegramSender(
+    public partial class TelegramSender(
         IOptions<ReportSettings> reportOptions,
         IReportDataProvider provider,
         IReport reportService,
@@ -55,11 +55,11 @@ namespace EolBot.Services.Telegram
                 items = await provider.GetAsync(fromInclusive, toInclusive, stoppingToken);
                 string defaultReport = reportService.Create(fromInclusive, toInclusive, items);
                 reports.TryAdd("default", defaultReport);
-                logger.LogInformation("Report created:\n{Text}", defaultReport);
+                LogReportCreated(logger, defaultReport);
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Failed to create report");
+                LogReportFailed(logger, ex);
                 Active = false;
                 return new SendingResult(Error: "ReportError", ErrorMessage: ex.Message);
             }
@@ -95,7 +95,7 @@ namespace EolBot.Services.Telegram
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError(ex, "Failed to get users");
+                    LogUsersFailed(logger, ex);
                     Active = false;
                     return new SendingResult
                     (
@@ -122,7 +122,7 @@ namespace EolBot.Services.Telegram
                 });
             }
 
-            logger.LogInformation("Report sent to {Counter} users", sent);
+            LogReportSent(logger, sent);
             Active = false;
 
             if (stoppingToken.IsCancellationRequested)
@@ -150,7 +150,7 @@ namespace EolBot.Services.Telegram
             try
             {
                 await botClient.SendMessage(chatId, text, ParseMode.Html);
-                logger.LogInformation("Message sent to user {ChatId}", chatId);
+                LogMessageSent(logger, chatId);
                 sent = true;
             }
             catch (ApiRequestException ex)
@@ -160,12 +160,11 @@ namespace EolBot.Services.Telegram
                 try
                 {
                     await userRepository.UnsubscribeAsync(chatId);
-                    logger.LogInformation("User {ChatId} blocked the bot and was unsubscribed", chatId);
+                    LogForbidden(logger, chatId);
                 }
                 catch (Exception innerEx)
                 {
-                    logger.LogWarning("Failed to unsubscribe user {ChatId}: {Message}",
-                        chatId, innerEx.Message);
+                    LogUnsubscriptionFailed(logger, chatId, innerEx.Message);
                 }
                 finally
                 {
@@ -174,11 +173,39 @@ namespace EolBot.Services.Telegram
             }
             catch (Exception ex)
             {
-                logger.LogWarning("Failed to send message to {ChatId}: {Message}", chatId, ex.Message);
+                LogMessageFailed(logger, chatId, ex.Message);
             }
 
             return sent;
         }
+
+        #region Logging
+
+        [LoggerMessage(LogLevel.Information, "Report created:\n{Text}")]
+        static partial void LogReportCreated(ILogger logger, string text);
+
+        [LoggerMessage(LogLevel.Error, "Failed to create report")]
+        static partial void LogReportFailed(ILogger logger, Exception ex);
+
+        [LoggerMessage(LogLevel.Error, "Failed to get users")]
+        static partial void LogUsersFailed(ILogger logger, Exception ex);
+
+        [LoggerMessage(LogLevel.Information, "Report sent to {Counter} users")]
+        static partial void LogReportSent(ILogger logger, int counter);
+
+        [LoggerMessage(LogLevel.Information, "Message sent to user {ChatId}")]
+        static partial void LogMessageSent(ILogger logger, long chatId);
+
+        [LoggerMessage(LogLevel.Information, "User {ChatId} blocked the bot and was unsubscribed")]
+        static partial void LogForbidden(ILogger logger, long chatId);
+
+        [LoggerMessage(LogLevel.Warning, "Failed to unsubscribe user {ChatId}: {Message}")]
+        static partial void LogUnsubscriptionFailed(ILogger logger, long chatId, string message);
+
+        [LoggerMessage(LogLevel.Warning, "Failed to send message to {ChatId}: {Message}")]
+        static partial void LogMessageFailed(ILogger logger, long chatId, string message);
+
+        #endregion
     }
 
     public sealed record SendingResult(
