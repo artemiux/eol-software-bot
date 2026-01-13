@@ -9,28 +9,25 @@ namespace EolBot.Services.Localization
     {
         private readonly ResourceManager _manager = new(typeof(SharedResources));
 
-        public IEnumerable<CultureInfo> Cultures
+        public IReadOnlyDictionary<string, CultureInfo> Cultures
         {
             get
             {
-                field ??= [.. CultureInfo
+                field ??= CultureInfo
                     .GetCultures(CultureTypes.AllCultures)
-                    .Where(x => _manager.GetResourceSet(x, true, false) is not null)];
+                    .Where(x => _manager.GetResourceSet(x, true, false) is not null)
+                    .ToDictionary(x => x.Name.ToLower());
                 return field;
             }
         }
 
-        public string GetString(string name, string? lang = null)
-        {
-            return Read(name, lang);
-        }
+        public string GetString(string name, string? lang = null) => Read(name, lang);
 
         public string this[string name, string? lang = null] => Read(name, lang);
 
         private string Read(string name, string? lang = null)
         {
-            var value = _manager.GetString(name,
-                lang is not null ? new CultureInfo(lang) : null);
+            var value = _manager.GetString(name, ((ILocalizationService)this).GetCultureOrDefault(lang));
             if (value is null)
             {
                 logger.LogWarning("Missing localization key '{Key}'", name);

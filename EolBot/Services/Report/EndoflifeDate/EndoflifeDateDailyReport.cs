@@ -33,9 +33,7 @@ namespace EolBot.Services.Report.EndoflifeDate
 
             string CreateBody()
             {
-                var culture = lang is not null
-                    && localizer.Cultures.Any(x => string.Equals(x.Name, lang, StringComparison.OrdinalIgnoreCase))
-                    ? new CultureInfo(lang) : CultureInfo.InvariantCulture;
+                var culture = localizer.GetCultureOrDefault(lang) ?? CultureInfo.InvariantCulture;
 
                 var sb = new StringBuilder();
                 var startDate = fromInclusive.Date;
