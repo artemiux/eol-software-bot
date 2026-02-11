@@ -19,7 +19,9 @@ using Hangfire;
 using Hangfire.MemoryStorage;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using MihaZupan;
 using Serilog;
+using System.Net;
 using Telegram.Bot;
 
 namespace EolBot
@@ -61,6 +63,19 @@ namespace EolBot
             builder.Services.AddSingleton<TelegramSender>();
             builder.Services.AddHttpClient("telegram_bot_client")
                 .RemoveAllLoggers()
+                .ConfigurePrimaryHttpMessageHandler(sp =>
+                {
+                    TelegramSettings settings = sp.GetRequiredService<IOptions<TelegramSettings>>().Value;
+                    IWebProxy? proxy = null;
+                    if (!string.IsNullOrWhiteSpace(settings.SocksHost))
+                    {
+                        proxy = new HttpToSocks5Proxy(settings.SocksHost, settings.SocksPort ?? 1080);
+                    }
+                    return new HttpClientHandler
+                    {
+                        Proxy = proxy
+                    };
+                })
                 .AddTypedClient<ITelegramBotClient>((httpClient, sp) =>
                 {
                     TelegramSettings settings = sp.GetRequiredService<IOptions<TelegramSettings>>().Value;
