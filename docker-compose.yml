@@ -11,3 +11,5 @@ services:
     volumes:
       - /opt/EolBot/etc/appsettings.json:/app/appsettings.json:ro
       - /opt/EolBot/var:/app/AppData
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
