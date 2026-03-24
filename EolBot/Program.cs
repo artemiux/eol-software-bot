@@ -79,7 +79,8 @@ namespace EolBot
                 .AddTypedClient<ITelegramBotClient>((httpClient, sp) =>
                 {
                     TelegramSettings settings = sp.GetRequiredService<IOptions<TelegramSettings>>().Value;
-                    return new TelegramBotClient(new TelegramBotClientOptions(settings.BotToken), httpClient);
+                    return new RetryingTelegramBotClient(
+                        new TelegramBotClient(new TelegramBotClientOptions(settings.BotToken), httpClient), 5);
                 });
             builder.Services.AddScoped<UpdateHandler>();
             builder.Services.AddScoped<ReceiverService>();

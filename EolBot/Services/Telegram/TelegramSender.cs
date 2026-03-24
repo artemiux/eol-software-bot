@@ -24,11 +24,6 @@ namespace EolBot.Services.Telegram
         public bool Active { get; private set; }
 
         private readonly SemaphoreSlim _lock = new(1, 1);
-        private readonly ParallelOptions _parallelOptions = new()
-        {
-            // https://core.telegram.org/bots/faq#my-bot-is-hitting-limits-how-do-i-avoid-this
-            MaxDegreeOfParallelism = reportOptions.Value.MaxConcurrentMessages
-        };
         private readonly int _databaseRequestLimit = reportOptions.Value.MaxConcurrentMessages * 10;
 
         public async Task<SendingResult> SendReportAsync(DateTime fromInclusive, DateTime toInclusive,
@@ -79,6 +74,13 @@ namespace EolBot.Services.Telegram
                 );
             }
 
+            ParallelOptions parallelOptions = new()
+            {
+                // https://core.telegram.org/bots/faq#my-bot-is-hitting-limits-how-do-i-avoid-this
+                MaxDegreeOfParallelism = reportOptions.Value.MaxConcurrentMessages,
+                CancellationToken = stoppingToken
+            };
+
             var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
             var sent = 0;
             var failed = 0;
@@ -106,20 +108,30 @@ namespace EolBot.Services.Telegram
                 }
                 start = result.Next.GetValueOrDefault();
 
-                await Parallel.ForEachAsync(result.Result, _parallelOptions, async (user, ct) =>
+                try
                 {
-                    string text = reports.GetOrAdd(
-                        key: user.LanguageCode ?? "default",
-                        valueFactory: (key) => reportService.Create(fromInclusive, toInclusive, items, key));
-                    if (await SendMessage(user.TelegramId, text, userRepository))
+                    await Parallel.ForEachAsync(result.Result, parallelOptions, async (user, ct) =>
                     {
-                        Interlocked.Increment(ref sent);
-                    }
-                    else
-                    {
-                        Interlocked.Increment(ref failed);
-                    }
-                });
+                        string text = reports.GetOrAdd(
+                            key: user.LanguageCode ?? "default",
+                            valueFactory: (key) => reportService.Create(fromInclusive, toInclusive, items, key));
+                        if (await SendMessage(user.TelegramId, text, userRepository, ct))
+                        {
+                            Interlocked.Increment(ref sent);
+                        }
+                        else
+                        {
+                            Interlocked.Increment(ref failed);
+                        }
+                    });
+
+                    // Manage sending limits
+                    await Task.Delay(1000, stoppingToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
             }
 
             LogReportSent(logger, sent);
@@ -144,12 +156,12 @@ namespace EolBot.Services.Telegram
         }
 
         private async Task<bool> SendMessage(long chatId, string text,
-            IUserRepository userRepository)
+            IUserRepository userRepository, CancellationToken ct)
         {
             var sent = false;
             try
             {
-                await botClient.SendMessage(chatId, text, ParseMode.Html);
+                await botClient.SendMessage(chatId, text, ParseMode.Html, cancellationToken: ct);
                 LogMessageSent(logger, chatId);
                 sent = true;
             }
@@ -170,6 +182,10 @@ namespace EolBot.Services.Telegram
                 {
                     _lock.Release();
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
             }
             catch (Exception ex)
             {
