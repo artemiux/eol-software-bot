@@ -5,7 +5,6 @@ using EolBot.Services.LogReader;
 using EolBot.Services.LogReader.Abstract;
 using EolBot.Services.Report.Abstract;
 using Hangfire;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using System.Net;
 using Telegram.Bot;
@@ -263,29 +262,24 @@ namespace EolBot.Services.Telegram.Bot
         #endregion
 
         #region Callbacks
-        private async Task OnCallbackQuery(CallbackQuery callbackQuery, CancellationToken cancellationToken)
+        private Task OnCallbackQuery(CallbackQuery callbackQuery, CancellationToken cancellationToken)
         {
             if (callbackQuery.Message?.Chat is not { } chat)
             {
-                return;
+                return Task.CompletedTask;
             }
 
-            await bot.DeleteMessage(
+            _ = bot.DeleteMessage(
                 chatId: chat,
                 messageId: callbackQuery.Message.Id,
                 cancellationToken: cancellationToken);
 
-            switch (callbackQuery.Data)
+            return callbackQuery.Data switch
             {
-                case "send start":
-                    await StartSendingAsync(chat, cancellationToken);
-                    break;
-                case "send stop":
-                    await StopSendingAsync(chat);
-                    break;
-                default:
-                    break;
-            }
+                "send start" => StartSendingAsync(chat, cancellationToken),
+                "send stop" => StopSendingAsync(chat),
+                _ => Task.CompletedTask,
+            };
         }
 
         private async Task StartSendingAsync(Chat chat, CancellationToken cancellationToken)
@@ -302,23 +296,22 @@ namespace EolBot.Services.Telegram.Bot
             }
         }
 
-        private async Task StopSendingAsync(Chat chat)
+        private Task<Message> StopSendingAsync(Chat chat)
         {
             if (IsSendingJobCompletedOrNotExist())
             {
-                await bot.SendMessage(chat, "Nothing to stop. Use `/send start` first.");
+                return bot.SendMessage(chat, "Nothing to stop. Use `/send start` first.");
             }
             else
             {
                 jobClient.Delete(_sendingJobId);
                 _sendingJobId = null;
-                await bot.SendMessage(chat, "Stopped.");
+                return bot.SendMessage(chat, "Stopped.");
             }
         }
         #endregion
 
-        private async Task<Message> Usage(Chat chat, string? lang) =>
-            await bot.SendMessage(chat, localizer["Usage", lang]);
+        private Task<Message> Usage(Chat chat, string? lang) => bot.SendMessage(chat, localizer["Usage", lang]);
 
         private Task UnknownUpdateHandlerAsync(Update update)
         {
