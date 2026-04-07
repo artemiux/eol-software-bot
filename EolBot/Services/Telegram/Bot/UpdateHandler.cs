@@ -125,34 +125,42 @@ namespace EolBot.Services.Telegram.Bot
         {
             using var scope = scopeFactory.CreateScope();
             var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
+            var ok = false;
             try
             {
                 await userRepository.SubscribeAsync(user.Id, user.LanguageCode);
+                ok = true;
                 LogUserSubscribed(logger, user.Id, user.FirstName);
-                return await bot.SendMessage(chat, localizer["Subscribed", user.LanguageCode]);
             }
             catch (Exception ex)
             {
                 LogSubscriptionFailed(logger, ex, user.Id, user.FirstName);
-                return await bot.SendMessage(chat, localizer["UnknownError", user.LanguageCode]);
             }
+
+            return ok
+                ? await bot.SendMessage(chat, localizer["Subscribed", user.LanguageCode])
+                : await bot.SendMessage(chat, localizer["UnknownError", user.LanguageCode]);
         }
 
         private async Task<Message> Unsubscribe(User user, Chat chat)
         {
             using var scope = scopeFactory.CreateScope();
             var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
+            var ok = false;
             try
             {
                 await userRepository.UnsubscribeAsync(user.Id, user.LanguageCode);
+                ok = true;
                 LogUserUnsubscribed(logger, user.Id, user.FirstName);
-                return await bot.SendMessage(chat, localizer["Unsubscribed", user.LanguageCode]);
             }
             catch (Exception ex)
             {
                 LogUnsubscriptionFailed(logger, ex, user.Id, user.FirstName);
-                return await bot.SendMessage(chat, localizer["UnknownError", user.LanguageCode]);
             }
+
+            return ok
+                ? await bot.SendMessage(chat, localizer["Unsubscribed", user.LanguageCode])
+                : await bot.SendMessage(chat, localizer["UnknownError", user.LanguageCode]);
         }
         #endregion
 
